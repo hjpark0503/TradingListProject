@@ -1,0 +1,5 @@
+node_modules/
+scripts/pdf-dump.txt
+scripts/page-ocr.png
+*.rtf
+.DS_Store
