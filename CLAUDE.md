@@ -25,6 +25,9 @@ node scripts/dump-pdf-lines.mjs <path-to.pdf>
 
 # 특정 페이지 OCR 테스트 (기본: 2페이지, scale 2.5)
 node scripts/ocr-pdf-page.mjs <path-to.pdf> [page] [scale]
+
+# 거래 요약 텍스트 파일 생성 (dump 결과를 파싱 → Shinhan_Trade_Summary.txt)
+node scripts/parse-trades.js scripts/pdf-dump.txt
 ```
 
 스크립트 실행에는 `pdfjs-dist`, `canvas`, `tesseract.js`가 `node_modules`에 설치되어 있어야 한다 (project root에 `package.json` 없음 — 스크립트 디렉터리 기준으로 별도 설치 필요).
