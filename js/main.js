@@ -119,56 +119,9 @@ function clusterPdfTextItemsToLines(items, yThreshold) {
   return lines;
 }
 
-/**
- * @param {ArrayBuffer} arrayBuffer
- * @returns {Promise<string[]>}
- */
-function promptForPassword(reason) {
-  return new Promise(function (resolve, reject) {
-    var modal = document.getElementById('pdf-password-modal');
-    var input = document.getElementById('pdf-password-input');
-    var submitBtn = document.getElementById('pdf-password-submit');
-    var cancelBtn = document.getElementById('pdf-password-cancel');
-    var errorEl = document.getElementById('pdf-password-error');
-
-    errorEl.hidden = reason !== 2;
-    input.value = '';
-    modal.hidden = false;
-    setTimeout(function () { input.focus(); }, 50);
-
-    function cleanup() {
-      modal.hidden = true;
-      submitBtn.onclick = null;
-      cancelBtn.onclick = null;
-      input.onkeydown = null;
-    }
-
-    submitBtn.onclick = function () {
-      var pw = input.value;
-      cleanup();
-      resolve(pw);
-    };
-
-    cancelBtn.onclick = function () {
-      cleanup();
-      reject(new Error('비밀번호 입력이 취소되었습니다.'));
-    };
-
-    input.onkeydown = function (e) {
-      if (e.key === 'Enter') submitBtn.onclick();
-      if (e.key === 'Escape') cancelBtn.onclick();
-    };
-  });
-}
-
 async function extractLogicalLinesFromPdf(arrayBuffer) {
   var loadingTask = pdfjsLib.getDocument({
-    data: new Uint8Array(arrayBuffer),
-    onPassword: function (updatePassword, reason) {
-      promptForPassword(reason).then(updatePassword).catch(function () {
-        loadingTask.destroy();
-      });
-    }
+    data: new Uint8Array(arrayBuffer)
   });
   var pdf = await loadingTask.promise;
   var allLines = [];
@@ -200,12 +153,7 @@ async function extractLogicalLinesViaOcr(arrayBuffer, onStatus) {
     throw new Error('OCR 라이브러리(Tesseract.js)를 불러오지 못했습니다.');
   }
   var loadingTask = pdfjsLib.getDocument({
-    data: new Uint8Array(arrayBuffer),
-    onPassword: function (updatePassword, reason) {
-      promptForPassword(reason).then(updatePassword).catch(function () {
-        loadingTask.destroy();
-      });
-    }
+    data: new Uint8Array(arrayBuffer)
   });
   var pdf = await loadingTask.promise;
   var allLines = [];
@@ -929,7 +877,7 @@ async function handlePdfFile(file) {
       );
     }
     refreshDashboardFromTrades(buys, sells);
-    updateHeaderMetaFromPdf(file, lines, trades.length, extractMode);
+    updateHeaderMetaFromPdf(file, trades, extractMode);
   } catch (e) {
     console.error(e);
     alert('PDF 분석 중 오류가 발생했습니다: ' + (e && e.message ? e.message : String(e)));
@@ -939,33 +887,34 @@ async function handlePdfFile(file) {
 }
 
 /**
- * 헤더 보조 정보를 업로드 파일 기준으로 가볍게 갱신
+ * 헤더 정보를 파싱된 거래 데이터 기준으로 갱신
  * @param {File} file
- * @param {string[]} lines
- * @param {number} tradeCount
+ * @param {TradeRow[]} trades
+ * @param {string} extractMode
  */
-function updateHeaderMetaFromPdf(file, lines, tradeCount, extractMode) {
+function updateHeaderMetaFromPdf(file, trades, extractMode) {
+  // header-sub: 실제 거래 날짜 범위로 갱신
+  if (trades.length > 0) {
+    var dates = trades.map(function (t) { return t.date; }).filter(Boolean).sort();
+    var sub = document.getElementById('header-sub');
+    if (sub) {
+      sub.textContent = '📅 ' + dates[0] + ' ~ ' + dates[dates.length - 1] + ' · 해외주식 전체';
+    }
+  }
+
+  // header-meta (우측): 파일·분석 정보
   var meta = document.getElementById('header-meta');
   if (!meta) return;
   var now = new Date();
-  var y = now.getFullYear();
-  var mo = String(now.getMonth() + 1).padStart(2, '0');
-  var d = String(now.getDate()).padStart(2, '0');
+  var today = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
   var modeLabel = extractMode === 'ocr' ? 'OCR(이미지 PDF)' : '텍스트';
   meta.innerHTML =
-    '파일: ' +
-    escapeHtml(file.name) +
-    '<br>분석 시각: ' +
-    y +
-    '-' +
-    mo +
-    '-' +
-    d +
-    '<br>추출 방식: ' +
-    modeLabel +
-    '<br>추출된 매매 행: ' +
-    tradeCount +
-    '건';
+    '파일: ' + escapeHtml(file.name) +
+    '<br>분석 시각: ' + today +
+    '<br>추출 방식: ' + modeLabel +
+    '<br>추출된 매매 행: ' + trades.length + '건';
 }
 
 function wireExchangeRateInput() {
