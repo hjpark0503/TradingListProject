@@ -12,17 +12,24 @@
   <!-- Tesseract.js (스캔/이미지 PDF OCR) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" crossorigin="anonymous"></script>
 </head>
-<body>
+<body data-market="overseas">
 
 <!-- ═══════════════════════════════════════════════
      HEADER
-     계좌 정보 및 조회 기간 표시
 ════════════════════════════════════════════════ -->
 <div class="header">
-  <div>
-    <div class="issuer-label">신한투자증권 거래내역서</div>
-    <h1 id="header-title">해외주식 거래내역 대시보드</h1>
-    <div class="sub" id="header-sub"></div>
+  <div class="header-left">
+    <div>
+      <div class="issuer-label">신한투자증권 거래내역서</div>
+      <h1 id="header-title">해외주식 거래내역 대시보드</h1>
+      <div class="sub" id="header-sub"></div>
+    </div>
+  </div>
+  <div class="header-center">
+    <div class="market-toggle">
+      <button class="market-btn active" data-market="overseas">🌐 해외주식</button>
+      <button class="market-btn" data-market="domestic">🇰🇷 국내주식</button>
+    </div>
   </div>
   <div class="header-right">
     <div class="header-actions">
@@ -68,7 +75,7 @@
     <div class="value purple">—</div>
     <div class="note">—</div>
   </div>
-  <div class="card" data-tab="fx" onclick="switchTab('fx')">
+  <div id="card-fx-wrap" class="card" data-tab="fx" onclick="switchTab('fx')">
     <div class="label">💱 환전</div>
     <div class="value teal">—</div>
     <div class="note">—</div>
@@ -112,7 +119,7 @@
     <button class="tab-btn active" data-tab="buy"  onclick="switchTab('buy')">💳 매수</button>
     <button class="tab-btn"        data-tab="sell" onclick="switchTab('sell')">💰 매도</button>
     <button class="tab-btn"        data-tab="tax"  onclick="switchTab('tax')">🧾 세금</button>
-    <button class="tab-btn"        data-tab="fx"   onclick="switchTab('fx')">💱 환전</button>
+    <button class="tab-btn" id="tab-btn-fx" data-tab="fx" onclick="switchTab('fx')">💱 환전</button>
     <button class="tab-btn"        data-tab="div"  onclick="switchTab('div')">🎁 배당금</button>
   </div>
 

@@ -19,6 +19,8 @@ var chartBalance = null;
 var currentExchangeRate = 1350;
 var _lastBuys = null;
 var _lastSells = null;
+var _currentMarket = 'overseas';
+var _tradesByMarket = { overseas: { buys: [], sells: [] }, domestic: { buys: [], sells: [] } };
 
 /**
  * switchTab
@@ -895,6 +897,7 @@ async function handlePdfFile(file) {
           : '거래 행을 찾지 못했습니다. 신한투자증권 해외주식 매수·매도 형식이 다르거나, 스캔 PDF일 수 있습니다.'
       );
     }
+    _tradesByMarket[_currentMarket] = { buys: buys, sells: sells };
     refreshDashboardFromTrades(buys, sells);
     updateHeaderMetaFromPdf(file, trades, extractMode);
   } catch (e) {
@@ -980,7 +983,23 @@ function showDashboard() {
   document.getElementById('dashboard-content').style.display = 'block';
 }
 
+function wireMarketToggle() {
+  document.querySelectorAll('.market-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var market = btn.dataset.market;
+      _currentMarket = market;
+      document.body.setAttribute('data-market', market);
+      document.querySelectorAll('.market-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.market === market);
+      });
+      var d = _tradesByMarket[market];
+      refreshDashboardFromTrades(d.buys, d.sells);
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   wirePdfUpload();
   wireExchangeRateInput();
+  wireMarketToggle();
 });
