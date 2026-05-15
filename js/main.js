@@ -172,7 +172,7 @@ async function extractLogicalLinesViaOcr(arrayBuffer, onStatus) {
     for (var p = 1; p <= pdf.numPages; p++) {
       if (onStatus) onStatus('페이지 ' + p + ' / ' + pdf.numPages + ' OCR 중…');
       var page = await pdf.getPage(p);
-      var viewport = page.getViewport({ scale: 2.2 });
+      var viewport = page.getViewport({ scale: 3.0 });
       var canvas = document.createElement('canvas');
       var ctx = canvas.getContext('2d');
       canvas.width = viewport.width;
@@ -213,6 +213,22 @@ function normalizeRawLines(lines) {
 // ═══════════════════════════════════════════════════════════════
 
 var ShinhanTradeParser = {
+  cleanName: function (raw) {
+    return raw.trim()
+      // [N] 숫자 [N] 숫자 해외증권 suffix 제거 (Shinhan OCR 표 컬럼 아티팩트)
+      .replace(/\s+\[\S*\]\s+\d+\s+\[\S*\]\s+\d+\s*해외증권\s*$/, '')
+      // 잔류 해외증권
+      .replace(/\s*해외증권\s*$/, '')
+      // 한글 시작 bracket 토큰 제거 (예: [에 ...)
+      .replace(/\s+\[[가-힣][^\]]*(?:\]|$)/g, '')
+      // 한글 포함 bracket 아티팩트 제거
+      .replace(/\[[^\]]*[가-힣][^\]]*\]/g, '')
+      // 뒤쪽에 붙은 독립 숫자·한글 단어(OCR 컬럼 유출) 제거
+      .replace(/(\s+(?:[\d.,]+|[가-힣]+))+\s*$/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  },
+
   /** 해외주식 매수/매도 한 줄 패턴 (날짜, 종목명, 유형, 단가, 수량, 정산, 예수금) */
   ROW_REGEX: /^(\d{4}[-./]\d{2}[-./]\d{2})\s+(.+?)\s+(?:해외증권\s+)?(해외주식매수|해외주식매도)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s*$/,
   ROW_REGEX_LOOSE:
@@ -281,11 +297,7 @@ var ShinhanTradeParser = {
     var date = normalizeDateStr(dateRaw);
     var row = {
       date: date,
-      name: String(name).trim()
-        .replace(/\s*해외증권\s*$/g, '')
-        .replace(/\[[^\]]*[가-힣][^\]]*\]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim(),
+      name: ShinhanTradeParser.cleanName(String(name)),
       type: type,
       unitPrice: parseNumberLoose(u),
       qty: parseNumberLoose(q),
@@ -864,6 +876,7 @@ async function handlePdfFile(file) {
         setLoading(true, msg);
       });
       extractMode = 'ocr';
+      window._lastOcrLines = lines;
       trades = ShinhanTradeParser.parseFromLines(lines);
     }
 
