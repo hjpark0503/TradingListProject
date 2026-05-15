@@ -194,38 +194,6 @@ body {
 }
 
 /* ── EMPTY STATE ───────────────────────────────────────────────── */
-#empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - var(--header-h) - 80px);
-  padding: 60px var(--space-page);
-  text-align: center;
-  animation: fadeUp 0.5s ease both;
-}
-
-.empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
-  opacity: 0.5;
-  filter: grayscale(0.3);
-}
-
-.empty-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  letter-spacing: -0.02em;
-  margin-bottom: 12px;
-}
-
-.empty-desc {
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  line-height: 1.8;
-  max-width: 380px;
-}
 
 /* ── DASHBOARD CONTENT ─────────────────────────────────────────── */
 #dashboard-content {

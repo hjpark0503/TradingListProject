@@ -975,7 +975,6 @@ function initDashboardFromStaticTables() {
 }
 
 function showDashboard() {
-  document.getElementById('empty-state').hidden = true;
   document.getElementById('dashboard-content').style.display = 'block';
 }
 
