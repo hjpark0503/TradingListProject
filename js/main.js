@@ -515,7 +515,7 @@ function renderTradeTbody(rows, tbody) {
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
     var isBuy = r.type.indexOf('매수') !== -1;
-    var badgeClass = isBuy ? 'b-buy' : 'b-sell';
+    var badgeClass = isBuy ? 'badge-buy' : 'badge-sell';
     var amtClass = isBuy ? 'red' : 'blue';
     var tr = document.createElement('tr');
     tr.innerHTML =
@@ -544,7 +544,7 @@ function renderSellTbodyWithPL(sells, plRows, tbody) {
     var plCell;
     if (plData && plData.hasBuyData) {
       var pl = plData.pl;
-      var plClass = pl >= 0 ? 'pl-profit' : 'pl-loss';
+      var plClass = pl >= 0 ? 'pl-pos' : 'pl-neg';
       var plSign = pl >= 0 ? '+' : '-';
       var pctText = plData.plPct !== null
         ? ' <span class="pl-pct">(' + escapeHtml((pl >= 0 ? '+' : '') + plData.plPct.toFixed(1) + '%)') + '</span>'
@@ -557,7 +557,7 @@ function renderSellTbodyWithPL(sells, plRows, tbody) {
     tr.innerHTML =
       '<td class="date-c">' + escapeHtml(r.date) + '</td>' +
       '<td class="ticker">' + escapeHtml(r.name) + '</td>' +
-      '<td><span class="badge b-sell">해외주식매도</span></td>' +
+      '<td><span class="badge badge-sell">해외주식매도</span></td>' +
       '<td class="r">' + escapeHtml(formatUsd(r.unitPrice)) + '</td>' +
       '<td class="r">' + escapeHtml(String(r.qty)) + '</td>' +
       '<td class="r blue">' + escapeHtml(formatUsd(Math.abs(r.settlement))) + '</td>' +
