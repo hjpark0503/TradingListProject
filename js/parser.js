@@ -42,9 +42,10 @@ var ShinhanTradeParser = {
   parseFromBlob: function (blob) {
     var text = this.normalizeOcrText(blob);
     var rows = [];
-    var re = this.ROW_REGEX_LOOSE;
+    // g 플래그가 있는 새 RegExp 생성 — 원본 리터럴에는 g 플래그가 없어서
+    // re.lastIndex가 갱신되지 않아 무한 루프 또는 0건이 되는 버그 수정
+    var re = new RegExp(this.ROW_REGEX_LOOSE.source, 'g');
     var m;
-    re.lastIndex = 0;
     while ((m = re.exec(text)) !== null) {
       var row = this.rowFromMatchGroups(
         m[1] + '-' + m[2] + '-' + m[3], m[4], m[5], m[6], m[7], m[8], m[9]

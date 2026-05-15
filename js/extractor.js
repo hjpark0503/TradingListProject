@@ -111,10 +111,6 @@ async function extractLogicalLinesViaOcr(arrayBuffer, onStatus) {
     }
   });
   try {
-    await worker.setParameters({
-      tessedit_pageseg_mode: '6',    // PSM_SINGLE_BLOCK — 표 형식 문서에 적합
-      preserve_interword_spaces: '1' // 컬럼 간 공백 유지 → 파서가 컬럼 경계 인식
-    });
     for (var p = 1; p <= pdf.numPages; p++) {
       if (onStatus) onStatus('페이지 ' + p + ' / ' + pdf.numPages + ' OCR 중…');
       var page = await pdf.getPage(p);
