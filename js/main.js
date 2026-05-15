@@ -120,8 +120,53 @@ function clusterPdfTextItemsToLines(items, yThreshold) {
  * @param {ArrayBuffer} arrayBuffer
  * @returns {Promise<string[]>}
  */
+function promptForPassword(reason) {
+  return new Promise(function (resolve, reject) {
+    var modal = document.getElementById('pdf-password-modal');
+    var input = document.getElementById('pdf-password-input');
+    var submitBtn = document.getElementById('pdf-password-submit');
+    var cancelBtn = document.getElementById('pdf-password-cancel');
+    var errorEl = document.getElementById('pdf-password-error');
+
+    errorEl.hidden = reason !== 2;
+    input.value = '';
+    modal.hidden = false;
+    setTimeout(function () { input.focus(); }, 50);
+
+    function cleanup() {
+      modal.hidden = true;
+      submitBtn.onclick = null;
+      cancelBtn.onclick = null;
+      input.onkeydown = null;
+    }
+
+    submitBtn.onclick = function () {
+      var pw = input.value;
+      cleanup();
+      resolve(pw);
+    };
+
+    cancelBtn.onclick = function () {
+      cleanup();
+      reject(new Error('비밀번호 입력이 취소되었습니다.'));
+    };
+
+    input.onkeydown = function (e) {
+      if (e.key === 'Enter') submitBtn.onclick();
+      if (e.key === 'Escape') cancelBtn.onclick();
+    };
+  });
+}
+
 async function extractLogicalLinesFromPdf(arrayBuffer) {
-  var loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  var loadingTask = pdfjsLib.getDocument({
+    data: arrayBuffer,
+    onPassword: function (updatePassword, reason) {
+      promptForPassword(reason).then(updatePassword).catch(function () {
+        loadingTask.destroy();
+      });
+    }
+  });
   var pdf = await loadingTask.promise;
   var allLines = [];
   for (var p = 1; p <= pdf.numPages; p++) {
@@ -151,7 +196,14 @@ async function extractLogicalLinesViaOcr(arrayBuffer, onStatus) {
   if (typeof Tesseract === 'undefined') {
     throw new Error('OCR 라이브러리(Tesseract.js)를 불러오지 못했습니다.');
   }
-  var loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  var loadingTask = pdfjsLib.getDocument({
+    data: arrayBuffer,
+    onPassword: function (updatePassword, reason) {
+      promptForPassword(reason).then(updatePassword).catch(function () {
+        loadingTask.destroy();
+      });
+    }
+  });
   var pdf = await loadingTask.promise;
   var allLines = [];
   var worker = await Tesseract.createWorker('kor+eng', 1, {
@@ -640,6 +692,7 @@ async function handlePdfFile(file) {
   setLoading(true, 'PDF 읽는 중…');
   try {
     var buf = await file.arrayBuffer();
+    var bufForOcr = buf.slice(0);
     var lines = await extractLogicalLinesFromPdf(buf);
     var extractMode = 'text';
     var trades = ShinhanTradeParser.parseFromLines(lines);
@@ -648,7 +701,7 @@ async function handlePdfFile(file) {
       return /해외주식매[수도]/.test(l);
     }))) {
       setLoading(true, '스캔 PDF 감지 — OCR 준비 중… (1~2분 소요)');
-      lines = await extractLogicalLinesViaOcr(buf, function (msg) {
+      lines = await extractLogicalLinesViaOcr(bufForOcr, function (msg) {
         setLoading(true, msg);
       });
       extractMode = 'ocr';

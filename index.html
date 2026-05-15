@@ -505,6 +505,19 @@
   신한투자증권 거래내역서 · 발급번호 77820231496 · 2026-05-15 출력
 </div>
 
+<div id="pdf-password-modal" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-title">🔒 PDF 비밀번호</div>
+    <p class="modal-desc">이 PDF는 비밀번호로 보호되어 있습니다.</p>
+    <p id="pdf-password-error" class="modal-error" hidden>비밀번호가 올바르지 않습니다. 다시 입력해 주세요.</p>
+    <input type="password" id="pdf-password-input" class="modal-input" placeholder="비밀번호 입력">
+    <div class="modal-actions">
+      <button type="button" id="pdf-password-cancel" class="btn-modal-cancel">취소</button>
+      <button type="button" id="pdf-password-submit" class="btn-modal-submit">확인</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
