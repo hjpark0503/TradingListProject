@@ -138,10 +138,62 @@ body {
   margin-bottom: 16px;
 }
 
+/* ── 환율 설정 바 ─────────────────────────────────────────── */
+.rate-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.rate-bar-label {
+  font-weight: 700;
+  color: #444;
+}
+
+.rate-bar-sep {
+  color: #00838f;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.rate-bar-unit {
+  color: #888;
+}
+
+.rate-bar-note {
+  color: #aaa;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.rate-input {
+  width: 92px;
+  padding: 5px 10px;
+  border: 1.5px solid #dde;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #00838f;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.rate-input:focus {
+  border-color: #00838f;
+}
+
 /* ── Summary Cards ───────────────────────────────────────── */
 .cards {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -167,6 +219,17 @@ body {
 .card[data-tab="tax"].active  { border-color: #6c3483; }
 .card[data-tab="fx"].active   { border-color: #00838f; }
 .card[data-tab="div"].active  { border-color: #27ae60; }
+
+/* 실현 손익 / 예상 양도세 카드 (탭 없는 정적 카드) */
+.card.card-stat {
+  cursor: default;
+}
+.card.card-stat:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+#card-pl   { border-left: 4px solid #e67e22; }
+#card-etax { border-left: 4px solid #8e44ad; }
 
 .card .label {
   font-size: 11px;
@@ -308,6 +371,13 @@ tfoot tr td {
 .purple { color: #6c3483; font-weight: 700; }
 .teal   { color: #00838f; font-weight: 700; }
 .green  { color: #27ae60; font-weight: 700; }
+.orange { color: #e67e22; font-weight: 700; }
+
+/* ── 개별 손익 컬럼 ─────────────────────────────────────── */
+.pl-profit { color: #d63031; font-weight: 700; }
+.pl-loss   { color: #2d5fa6; font-weight: 700; }
+.pl-na     { color: #bbb; }
+.pl-pct    { font-size: 11px; font-weight: 400; opacity: 0.8; }
 
 /* ── Bar Chart ───────────────────────────────────────────── */
 .bar-item {

@@ -48,6 +48,15 @@
 <!-- 대시보드 콘텐츠: PDF 업로드 후 표시 -->
 <div id="dashboard-content">
 
+<!-- ── 환율 설정 바 ─────────────────────────────────────────── -->
+<div class="rate-bar">
+  <span class="rate-bar-label">💱 환율</span>
+  <span class="rate-bar-sep">₩</span>
+  <input type="number" id="exchangeRateInput" class="rate-input" value="1350" min="100" max="9999" step="1">
+  <span class="rate-bar-unit">/ USD</span>
+  <span class="rate-bar-note">양도소득세 계산에 적용 (기본공제 250만원, 세율 22%)</span>
+</div>
+
 <!-- ═══════════════════════════════════════════════
      SUMMARY CARDS
      카드 클릭 시 아래 탭도 함께 전환됨 (switchTab)
@@ -77,6 +86,16 @@
     <div class="label">🎁 배당금</div>
     <div class="value green">1건</div>
     <div class="note">$2.50 수령</div>
+  </div>
+  <div class="card card-stat" id="card-pl">
+    <div class="label">📈 실현 손익</div>
+    <div class="value" id="card-pl-value">—</div>
+    <div class="note" id="card-pl-note">데이터 로드 후 표시</div>
+  </div>
+  <div class="card card-stat" id="card-etax">
+    <div class="label">💸 예상 양도세</div>
+    <div class="value orange" id="card-etax-value">—</div>
+    <div class="note" id="card-etax-note">기본공제 ₩250만 적용</div>
   </div>
 </div>
 
@@ -241,6 +260,7 @@
           <th class="r">단가 (USD)</th>
           <th class="r">수량</th>
           <th class="r">정산금액 (USD)</th>
+          <th class="r">개별 손익 (USD)</th>
           <th class="r">예수금잔고 (USD)</th>
         </tr>
       </thead>
@@ -306,6 +326,7 @@
         <tr>
           <td colspan="5" id="tfoot-sell-label">합계 (8건)</td>
           <td class="r blue" id="tfoot-sell-total">$3,795.70</td>
+          <td class="r pl-na" id="tfoot-sell-pl">—</td>
           <td></td>
         </tr>
       </tfoot>
