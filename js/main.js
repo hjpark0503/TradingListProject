@@ -219,6 +219,8 @@ var ShinhanTradeParser = {
       .replace(/\s+\[\S*\]\s+\d+\s+\[\S*\]\s+\d+\s*해외증권\s*$/, '')
       // 잔류 해외증권
       .replace(/\s*해외증권\s*$/, '')
+      // OCR italic/list 마커 제거: [i], [ul [i], [ul...] 등 소문자 bracket 아티팩트
+      .replace(/\s*\[[a-z][^\]]*\]?/g, '')
       // 한글 시작 bracket 토큰 제거 (예: [에 ...)
       .replace(/\s+\[[가-힣][^\]]*(?:\]|$)/g, '')
       // 한글 포함 bracket 아티팩트 제거
