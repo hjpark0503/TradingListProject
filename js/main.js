@@ -160,7 +160,7 @@ function promptForPassword(reason) {
 
 async function extractLogicalLinesFromPdf(arrayBuffer) {
   var loadingTask = pdfjsLib.getDocument({
-    data: arrayBuffer,
+    data: new Uint8Array(arrayBuffer),
     onPassword: function (updatePassword, reason) {
       promptForPassword(reason).then(updatePassword).catch(function () {
         loadingTask.destroy();
@@ -197,7 +197,7 @@ async function extractLogicalLinesViaOcr(arrayBuffer, onStatus) {
     throw new Error('OCR 라이브러리(Tesseract.js)를 불러오지 못했습니다.');
   }
   var loadingTask = pdfjsLib.getDocument({
-    data: arrayBuffer,
+    data: new Uint8Array(arrayBuffer),
     onPassword: function (updatePassword, reason) {
       promptForPassword(reason).then(updatePassword).catch(function () {
         loadingTask.destroy();
