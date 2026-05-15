@@ -657,6 +657,7 @@ function renderOrUpdateBalanceLineChart(rows) {
  * @param {TradeRow[]} sells
  */
 function refreshDashboardFromTrades(buys, sells) {
+  showDashboard();
   updateSummaryCards(buys, sells);
   updateBuySellTables(buys, sells);
   renderOrUpdateBalanceLineChart(buys.concat(sells));
@@ -786,7 +787,11 @@ function initDashboardFromStaticTables() {
   refreshDashboardFromTrades(buys, sells);
 }
 
+function showDashboard() {
+  document.getElementById('empty-state').hidden = true;
+  document.getElementById('dashboard-content').style.display = '';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   wirePdfUpload();
-  initDashboardFromStaticTables();
 });
