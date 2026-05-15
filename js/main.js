@@ -214,9 +214,9 @@ function normalizeRawLines(lines) {
 
 var ShinhanTradeParser = {
   /** 해외주식 매수/매도 한 줄 패턴 (날짜, 종목명, 유형, 단가, 수량, 정산, 예수금) */
-  ROW_REGEX: /^(\d{4}[-./]\d{2}[-./]\d{2})\s+(.+?)\s+(해외주식매수|해외주식매도)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s*$/,
+  ROW_REGEX: /^(\d{4}[-./]\d{2}[-./]\d{2})\s+(.+?)\s+(?:해외증권\s+)?(해외주식매수|해외주식매도)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s*$/,
   ROW_REGEX_LOOSE:
-    /(\d{4})[.\-/](\d{2})[.\-/](\d{2})\s+(.+?)\s+(해외\s*주식\s*매[수도])\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)/,
+    /(\d{4})[.\-/](\d{2})[.\-/](\d{2})\s+(.+?)\s+(?:해외\s*증권\s+)?(해외\s*주식\s*매[수도])\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)/,
 
   /**
    * @param {string[]} logicalLines
@@ -281,7 +281,11 @@ var ShinhanTradeParser = {
     var date = normalizeDateStr(dateRaw);
     var row = {
       date: date,
-      name: String(name).trim().replace(/\s+/g, ' '),
+      name: String(name).trim()
+        .replace(/\s*해외증권\s*$/g, '')
+        .replace(/\[[^\]]*[가-힣][^\]]*\]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim(),
       type: type,
       unitPrice: parseNumberLoose(u),
       qty: parseNumberLoose(q),
