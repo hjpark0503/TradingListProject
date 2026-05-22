@@ -488,9 +488,9 @@ thead th {
   color:var(--text-muted); background:rgba(0,0,0,0.02);
   border-bottom:1px solid rgba(0,0,0,0.06); white-space:nowrap;
 }
-/* 거래일·종류·종목명·거래유형 헤더 — 크기만 확대 */
-.tab-panel thead th:nth-child(-n+4) {
-  font-size:.875rem;
+/* 헤더 크기 */
+.tab-panel thead th:nth-child(-n+10) {
+  font-size:.8rem;
 }
 thead th.r { text-align:right; }
 
@@ -567,7 +567,7 @@ tfoot td.r  { text-align:right; color:var(--text-primary); font-size:.81rem; }
 /* 거래일·종류·종목명·거래유형 — badge 기본(0.62rem)보다 뒤에 두어 덮어씀 */
 .tab-panel tbody td.col-text {
   font-family:'Pretendard',sans-serif;
-  font-size:.9375rem !important;
+  font-size:.81rem !important;
   line-height:1.4;
 }
 .tab-panel tbody td.col-text.date-cell {
@@ -575,7 +575,7 @@ tfoot td.r  { text-align:right; color:var(--text-primary); font-size:.81rem; }
 }
 .tab-panel tbody td.col-text .badge,
 .tab-panel tbody td.col-text .mkt-badge {
-  font-size:.875rem !important;
+  font-size:.75rem !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -633,7 +633,6 @@ tfoot td.r  { text-align:right; color:var(--text-primary); font-size:.81rem; }
   .chart-wrap--tall { height:180px; }
   .tab-btn { padding:6px 10px; font-size:.72rem; }
   thead th { padding:8px 10px; }
-  .tab-panel thead th:nth-child(-n+4) { font-size:.85rem; }
   tbody td { padding:9px 10px; }
   .tab-panel tbody td.col-text { font-size:.9rem !important; }
   .tab-panel tbody td.col-text .badge,
