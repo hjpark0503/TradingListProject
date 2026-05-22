@@ -488,6 +488,10 @@ thead th {
   color:var(--text-muted); background:rgba(0,0,0,0.02);
   border-bottom:1px solid rgba(0,0,0,0.06); white-space:nowrap;
 }
+/* 거래일·종류·종목명·거래유형 헤더 — 크기만 확대 */
+.tab-panel thead th:nth-child(-n+4) {
+  font-size:.875rem;
+}
 thead th.r { text-align:right; }
 
 tbody tr {
@@ -629,6 +633,7 @@ tfoot td.r  { text-align:right; color:var(--text-primary); font-size:.81rem; }
   .chart-wrap--tall { height:180px; }
   .tab-btn { padding:6px 10px; font-size:.72rem; }
   thead th { padding:8px 10px; }
+  .tab-panel thead th:nth-child(-n+4) { font-size:.85rem; }
   tbody td { padding:9px 10px; }
   .tab-panel tbody td.col-text { font-size:.9rem !important; }
   .tab-panel tbody td.col-text .badge,
