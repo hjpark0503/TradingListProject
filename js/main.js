@@ -10,7 +10,7 @@ if (typeof pdfjsLib !== 'undefined') {
 var currentExchangeRate = 1350;
 var _lastBuys  = null;
 var _lastSells = null;
-var _currentMarket = 'overseas';
+var _currentMarket = 'domestic';
 var _tradesByMarket = { overseas: { buys: [], sells: [] }, domestic: { buys: [], sells: [] } };
 
 // ── 탭 전환 ──────────────────────────────────────────────────────
@@ -183,18 +183,13 @@ function wireExchangeRateInput() {
 }
 
 function wireMarketToggle() {
-  document.querySelectorAll('.market-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var market = btn.dataset.market;
-      _currentMarket = market;
-      document.body.setAttribute('data-market', market);
-      document.querySelectorAll('.market-btn').forEach(function (b) {
-        b.classList.toggle('active', b.dataset.market === market);
-      });
-      var d = _tradesByMarket[market];
+  window.refreshPdfTradesForMarket = function (market) {
+    _currentMarket = market;
+    var d = _tradesByMarket[market];
+    if (d.buys.length || d.sells.length) {
       refreshDashboardFromTrades(d.buys, d.sells);
-    });
-  });
+    }
+  };
 }
 
 document.addEventListener('DOMContentLoaded', function () {

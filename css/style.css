@@ -61,6 +61,7 @@
    2. RESET & BASE
    ══════════════════════════════════════════════════════════════════ */
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+[hidden] { display:none !important; }
 html { scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }
 body {
   font-family: 'Pretendard','Noto Sans KR',-apple-system,sans-serif;
@@ -180,6 +181,8 @@ body {
 /* 필드 */
 .field { display:flex; flex-direction:column; gap:5px; }
 .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.field-row.fee-tax--tax-only { grid-template-columns:1fr; }
+.field-row.fee-tax--tax-only #field-fee { display:none; }
 .field-label {
   font-size:.70rem; font-weight:600; color:var(--text-label);
   letter-spacing:.03em; display:flex; align-items:center; gap:4px;
@@ -233,6 +236,23 @@ select.inp { cursor:pointer; appearance:none;
   background:var(--sell-mid); color:#fff;
 }
 
+/* 거래유형 선택 (세그먼트 스타일) */
+.type-ctrl {
+  display:flex; flex-wrap:wrap; gap:6px;
+}
+.type-btn {
+  flex:1 1 calc(33.333% - 6px); min-width:0; height:34px;
+  border:1px solid var(--border-med); border-radius:var(--r-sm);
+  background:transparent; cursor:pointer;
+  font-family:'Pretendard',sans-serif; font-size:.72rem; font-weight:600;
+  color:var(--text-muted); transition:background .18s, color .18s, border-color .18s;
+  white-space:nowrap; padding:0 4px;
+}
+.type-btn:hover { background:rgba(0,0,0,0.04); color:var(--text-secondary); }
+.type-btn.active {
+  background:var(--sell-mid); color:#fff; border-color:var(--sell-mid);
+}
+
 /* 구분선 */
 .field-divider {
   height:1px; background:var(--border); margin:2px 0;
@@ -272,20 +292,70 @@ select.inp { cursor:pointer; appearance:none;
    ══════════════════════════════════════════════════════════════════ */
 .dashboard-area { display:flex; flex-direction:column; gap:20px; animation:fadeUp .4s ease both; }
 
-/* 환율 바 */
-.rate-bar {
-  display:flex; align-items:center; gap:10px;
-  padding:10px 16px;
+/* 마켓 스퀴저 */
+.market-squeezer {
+  display:flex; align-items:center; justify-content:flex-start;
+}
+.market-squeezer .seg-ctrl {
+  width:auto; min-width:200px;
+  box-shadow:var(--shadow-sm);
+}
+.market-squeezer .seg-btn:not(.active) {
+  background:var(--bg-surface);
+}
+.market-squeezer .seg-btn:not(.active):hover {
+  background:var(--bg-surface);
+  color:var(--text-secondary);
+}
+
+/* 국내 마켓: 해외 통합 패널 숨김 */
+body[data-market="domestic"] #overseas-panel { display:none !important; }
+
+/* 해외: 환율 + 예상 양도세 통합 패널 */
+.overseas-panel {
+  padding:14px 18px;
   background:var(--bg-card);
   border:1px solid var(--border);
   border-radius:var(--r-md);
   box-shadow:var(--shadow-sm);
-  flex-wrap:wrap;
 }
-.rate-bar-label { font-size:.78rem; font-weight:600; color:var(--teal); white-space:nowrap; }
-.rate-bar-sep   { font-size:.80rem; color:var(--text-muted); }
-.rate-bar-unit  { font-size:.76rem; color:var(--text-secondary); white-space:nowrap; }
-.rate-bar-note  { font-size:.70rem; color:var(--text-muted); margin-left:auto; }
+.overseas-panel__main {
+  display:flex; align-items:stretch; gap:20px;
+}
+.overseas-panel__rate,
+.overseas-panel__etax {
+  flex:1; min-width:0;
+  display:flex; flex-direction:column; gap:8px;
+}
+.overseas-panel__title {
+  font-size:.68rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-label);
+}
+.overseas-panel__rate-row {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.overseas-panel__sym,
+.overseas-panel__unit {
+  font-size:.80rem; color:var(--text-muted); white-space:nowrap;
+}
+.overseas-panel__rate .overseas-panel__title { color:var(--teal); }
+.overseas-panel__divider {
+  width:1px; background:var(--border); flex-shrink:0; margin:2px 0;
+}
+.overseas-panel__value {
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.22rem; font-weight:700; letter-spacing:-.04em;
+  line-height:1.1; color:var(--text-primary);
+}
+.overseas-panel__note {
+  font-size:.68rem; color:var(--text-muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.overseas-panel__hint {
+  margin:12px 0 0; padding-top:10px;
+  border-top:1px solid var(--border);
+  font-size:.70rem; color:var(--text-muted);
+}
 .rate-input {
   width:88px; height:30px; padding:0 10px;
   background:rgba(0,0,0,0.04); border:1px solid var(--border-med);
@@ -431,24 +501,24 @@ tbody tr:hover      { background:rgba(49,130,206,0.035); }
 tbody td {
   padding:11px 13px; color:var(--text-secondary);
   vertical-align:middle; white-space:nowrap;
+  font-size:.81rem;
 }
-tbody td.r { text-align:right; color:var(--text-primary); }
-
-/* 날짜 열 */
-.date-cell {
+tbody td.r {
+  text-align:right; color:var(--text-primary);
   font-family:'JetBrains Mono',monospace;
-  font-size:.76rem; color:var(--text-muted);
+  font-size:.81rem; letter-spacing:-.02em;
 }
-/* 종목명 열 */
-.stock-cell  { font-weight:600; color:var(--text-primary); }
+
+.date-cell { color:var(--text-muted); }
+.stock-cell { font-weight:600; color:var(--text-primary); }
 /* 금액 열 강조 */
 .settle-cell { font-weight:600; color:var(--text-primary) !important; }
 .fee-cell,
 .tax-cell    { color:var(--text-muted) !important; }
 
 tfoot tr    { background:rgba(0,0,0,0.02); border-top:1px solid rgba(0,0,0,0.07); }
-tfoot td    { padding:10px 13px; font-size:.74rem; font-weight:600; color:var(--text-muted); }
-tfoot td.r  { text-align:right; color:var(--text-primary); }
+tfoot td    { padding:10px 13px; font-size:.81rem; font-weight:600; color:var(--text-muted); }
+tfoot td.r  { text-align:right; color:var(--text-primary); font-size:.81rem; }
 
 .pl-pos { color:var(--buy)  !important; font-weight:600; }
 .pl-neg { color:var(--sell) !important; font-weight:600; }
@@ -489,6 +559,20 @@ tfoot td.r  { text-align:right; color:var(--text-primary); }
 }
 .mkt-overseas { background:rgba(49,130,206,0.10); color:var(--sell); }
 .mkt-domestic { background:rgba(217,48,37,0.09);  color:var(--buy);  }
+
+/* 거래일·종류·종목명·거래유형 — badge 기본(0.62rem)보다 뒤에 두어 덮어씀 */
+.tab-panel tbody td.col-text {
+  font-family:'Pretendard',sans-serif;
+  font-size:.9375rem !important;
+  line-height:1.4;
+}
+.tab-panel tbody td.col-text.date-cell {
+  font-family:'JetBrains Mono',monospace !important;
+}
+.tab-panel tbody td.col-text .badge,
+.tab-panel tbody td.col-text .mkt-badge {
+  font-size:.875rem !important;
+}
 
 /* ══════════════════════════════════════════════════════════════════
    12. TOAST
@@ -533,13 +617,20 @@ tfoot td.r  { text-align:right; color:var(--text-primary); }
 
 @media (max-width:600px) {
   .header h1 { font-size:.92rem; }
+  .market-squeezer .seg-ctrl { min-width:0; width:100%; }
+  .type-btn { flex:1 1 calc(50% - 6px); font-size:.68rem; }
   .cards  { gap:8px; }
   .card   { padding:13px 12px; border-radius:var(--r-md); }
   .card .value { font-size:.95rem; }
   .card .label { font-size:.62rem; }
-  .rate-bar-note { display:none; }
+  .overseas-panel__main { flex-direction:column; gap:14px; }
+  .overseas-panel__divider { width:100%; height:1px; margin:0; }
+  .overseas-panel__hint { font-size:.65rem; }
   .chart-wrap--tall { height:180px; }
   .tab-btn { padding:6px 10px; font-size:.72rem; }
   thead th { padding:8px 10px; }
-  tbody td { padding:9px 10px; font-size:.78rem; }
+  tbody td { padding:9px 10px; }
+  .tab-panel tbody td.col-text { font-size:.9rem !important; }
+  .tab-panel tbody td.col-text .badge,
+  .tab-panel tbody td.col-text .mkt-badge { font-size:.85rem !important; }
 }

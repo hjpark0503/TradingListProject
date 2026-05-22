@@ -87,9 +87,9 @@ function renderTradeTbody(rows, tbody) {
     var amtClass   = isBuy ? 'red' : 'blue';
     var tr = document.createElement('tr');
     tr.innerHTML =
-      '<td class="date-c">' + escapeHtml(r.date) + '</td>' +
-      '<td class="ticker">' + escapeHtml(r.name) + '</td>' +
-      '<td><span class="badge ' + badgeClass + '">' + escapeHtml(r.type) + '</span></td>' +
+      '<td class="col-text date-c">' + escapeHtml(r.date) + '</td>' +
+      '<td class="col-text ticker">' + escapeHtml(r.name) + '</td>' +
+      '<td class="col-text"><span class="badge ' + badgeClass + '">' + escapeHtml(r.type) + '</span></td>' +
       '<td class="r">'  + escapeHtml(formatUsd(r.unitPrice)) + '</td>' +
       '<td class="r">'  + escapeHtml(String(r.qty)) + '</td>' +
       '<td class="r ' + amtClass + '">' + escapeHtml(formatUsd(Math.abs(r.settlement))) + '</td>' +
@@ -117,9 +117,9 @@ function renderSellTbodyWithPL(sells, plRows, tbody) {
     }
     var tr = document.createElement('tr');
     tr.innerHTML =
-      '<td class="date-c">' + escapeHtml(r.date) + '</td>' +
-      '<td class="ticker">' + escapeHtml(r.name) + '</td>' +
-      '<td><span class="badge badge-sell">해외주식매도</span></td>' +
+      '<td class="col-text date-c">' + escapeHtml(r.date) + '</td>' +
+      '<td class="col-text ticker">' + escapeHtml(r.name) + '</td>' +
+      '<td class="col-text"><span class="badge badge-sell">해외주식매도</span></td>' +
       '<td class="r">' + escapeHtml(formatUsd(r.unitPrice)) + '</td>' +
       '<td class="r">' + escapeHtml(String(r.qty)) + '</td>' +
       '<td class="r blue">' + escapeHtml(formatUsd(Math.abs(r.settlement))) + '</td>' +
@@ -202,7 +202,7 @@ function updateEstimatedTaxCard(taxUsd, exchangeRate) {
   var valEl  = document.getElementById('card-etax-value');
   var noteEl = document.getElementById('card-etax-note');
   if (!valEl) return;
-  valEl.className = 'value orange';
+  valEl.className = 'overseas-panel__value orange';
   if (taxUsd <= 0) {
     valEl.textContent = '$0.00';
     if (noteEl) noteEl.textContent = '과세 대상 이익 없음';

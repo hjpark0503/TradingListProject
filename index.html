@@ -50,31 +50,31 @@
 
       <div class="form-body">
 
-        <!-- 실거래 일자 -->
+        <!-- 거래 일 -->
         <div class="field">
-          <label class="field-label" for="inp-date">실거래 일자</label>
+          <label class="field-label" for="inp-date">거래일</label>
           <input type="date" id="inp-date" class="inp">
         </div>
 
-        <!-- 거래유형 + 종류 -->
-        <div class="field-row">
-          <div class="field">
-            <label class="field-label" for="inp-type">거래유형</label>
-            <select id="inp-type" class="inp" onchange="onTypeChange()">
-              <option value="">선택</option>
-              <option value="buy">매수</option>
-              <option value="sell">매도</option>
-              <option value="withdraw">출금</option>
-              <option value="deposit">입금</option>
-              <option value="div">배당금</option>
-            </select>
+        <!-- 거래유형 -->
+        <div class="field">
+          <label class="field-label">거래유형</label>
+          <div class="type-ctrl" id="type-ctrl">
+            <button type="button" class="type-btn" data-type="buy" onclick="setTradeType('buy')">매수</button>
+            <button type="button" class="type-btn" data-type="sell" onclick="setTradeType('sell')">매도</button>
+            <button type="button" class="type-btn" data-type="deposit" onclick="setTradeType('deposit')">입금</button>
+            <button type="button" class="type-btn" data-type="withdraw" onclick="setTradeType('withdraw')">출금</button>
+            <button type="button" class="type-btn" data-type="div" onclick="setTradeType('div')">배당금</button>
           </div>
-          <div class="field">
-            <label class="field-label">종류</label>
-            <div class="seg-ctrl">
-              <button class="seg-btn" data-mkt="domestic" onclick="setMarket('domestic')">🇰🇷 국내</button>
-              <button class="seg-btn active" data-mkt="overseas" onclick="setMarket('overseas')">🌐 해외</button>
-            </div>
+          <input type="hidden" id="inp-type" value="">
+        </div>
+
+        <!-- 종류 (해외/국내) -->
+        <div class="field">
+          <label class="field-label">종류</label>
+          <div class="seg-ctrl">
+            <button type="button" class="seg-btn form-market-btn active" data-mkt="domestic" onclick="setMarket('domestic')">🇰🇷 국내</button>
+            <button type="button" class="seg-btn form-market-btn" data-mkt="overseas" onclick="setMarket('overseas')">🌐 해외</button>
           </div>
         </div>
 
@@ -91,6 +91,17 @@
         </div>
 
         <div class="field-divider"></div>
+
+        <!-- 거래금액 직접 입력 (입금/출금/배당금) -->
+        <div class="field" id="field-amount-direct" hidden>
+          <label class="field-label" for="inp-amount">
+            거래금액 <span class="currency-hint" id="hint-amount">USD</span>
+          </label>
+          <div class="inp-prefix-wrap">
+            <span class="inp-prefix" id="prefix-amount">$</span>
+            <input type="number" id="inp-amount" class="inp inp-num inp-prefixed" placeholder="0.00" min="0" step="any" oninput="calcAuto()">
+          </div>
+        </div>
 
         <!-- 수량 + 단가 -->
         <div class="field-row" id="field-qty-price">
@@ -110,8 +121,8 @@
         </div>
 
         <!-- 수수료 + 세금 -->
-        <div class="field-row">
-          <div class="field">
+        <div class="field-row" id="field-fee-tax">
+          <div class="field" id="field-fee">
             <label class="field-label" for="inp-fee">
               수수료 <span class="currency-hint" id="hint-fee">USD</span>
             </label>
@@ -120,7 +131,7 @@
               <input type="number" id="inp-fee" class="inp inp-num inp-prefixed" placeholder="0.00" min="0" step="any" oninput="calcAuto()">
             </div>
           </div>
-          <div class="field">
+          <div class="field" id="field-tax">
             <label class="field-label" for="inp-tax">
               세금 <span class="currency-hint" id="hint-tax">USD</span>
             </label>
@@ -131,12 +142,12 @@
           </div>
         </div>
 
-        <!-- 자동계산 박스 -->
-        <div class="calc-box">
-          <div class="calc-row">
+        <!-- 자동계산 박스 (매수/매도·배당금 정산 미리보기) -->
+        <div class="calc-box" id="calc-box">
+          <div class="calc-row" id="calc-row-amount">
             <span class="calc-label">
               거래금액
-              <span class="calc-formula">수량 × 단가</span>
+              <span class="calc-formula" id="calc-formula-amount">수량 × 단가</span>
             </span>
             <span class="calc-value" id="disp-amount">—</span>
           </div>
@@ -144,7 +155,7 @@
           <div class="calc-row highlight">
             <span class="calc-label">
               정산금액
-              <span class="calc-formula">거래금액 + 수수료 − 세금</span>
+              <span class="calc-formula" id="calc-formula-settlement">매수: +수수료 +세금 / 매도: −수수료 −세금</span>
             </span>
             <span class="calc-value" id="disp-settlement">—</span>
           </div>
@@ -165,13 +176,33 @@
   <!-- ══ RIGHT: 대시보드 ═══════════════════════════ -->
   <div class="dashboard-area">
 
-    <!-- 환율 바 (해외모드) -->
-    <div class="rate-bar" id="rate-bar">
-      <span class="rate-bar-label">💱 환율</span>
-      <span class="rate-bar-sep">₩</span>
-      <input type="number" id="exchangeRateInput" class="rate-input" value="1350" min="100" max="9999" step="1">
-      <span class="rate-bar-unit">/ USD</span>
-      <span class="rate-bar-note">양도소득세 계산 기준 (기본공제 250만원, 세율 22%)</span>
+    <!-- 해외/국내 마켓 스퀴저 -->
+    <div class="market-squeezer">
+      <div class="seg-ctrl">
+        <button type="button" class="seg-btn market-btn active" data-market="domestic" onclick="setMarket('domestic')">🇰🇷 국내</button>
+        <button type="button" class="seg-btn market-btn" data-market="overseas" onclick="setMarket('overseas')">🌐 해외</button>
+      </div>
+    </div>
+
+    <!-- 해외: 환율 + 예상 양도세 통합 패널 -->
+    <div class="overseas-panel" id="overseas-panel">
+      <div class="overseas-panel__main">
+        <div class="overseas-panel__rate">
+          <span class="overseas-panel__title">💱 환율</span>
+          <div class="overseas-panel__rate-row">
+            <span class="overseas-panel__sym">₩</span>
+            <input type="number" id="exchangeRateInput" class="rate-input" value="1350" min="100" max="9999" step="1" aria-label="환율 (원/USD)">
+            <span class="overseas-panel__unit">/ USD</span>
+          </div>
+        </div>
+        <div class="overseas-panel__divider" aria-hidden="true"></div>
+        <div class="overseas-panel__etax">
+          <span class="overseas-panel__title">💸 예상 양도세</span>
+          <div class="overseas-panel__value orange" id="card-etax-value">—</div>
+          <div class="overseas-panel__note" id="card-etax-note">기본공제 ₩250만 적용</div>
+        </div>
+      </div>
+      <p class="overseas-panel__hint">양도소득세 계산 기준 (기본공제 250만원, 세율 22%)</p>
     </div>
 
     <!-- 서머리 카드 -->
@@ -185,11 +216,6 @@
         <div class="label">💰 매도</div>
         <div class="value blue" id="card-sell-count">—</div>
         <div class="note" id="card-sell-total">—</div>
-      </div>
-      <div class="card card-stat">
-        <div class="label">🧾 납부 세금</div>
-        <div class="value purple" id="card-tax-value">—</div>
-        <div class="note" id="card-tax-note">매수+매도 세금 합계</div>
       </div>
       <div class="card" data-tab="deposit" onclick="switchTab('deposit')">
         <div class="label">⬇️ 입금</div>
@@ -210,11 +236,6 @@
         <div class="label">📈 실현 손익</div>
         <div class="value" id="card-pl-value">—</div>
         <div class="note" id="card-pl-note">데이터 로드 후 표시</div>
-      </div>
-      <div class="card card-stat" id="card-etax">
-        <div class="label">💸 예상 양도세</div>
-        <div class="value orange" id="card-etax-value">—</div>
-        <div class="note" id="card-etax-note">기본공제 ₩250만 적용</div>
       </div>
     </div>
 
@@ -385,7 +406,7 @@
 <!-- ── 폼 인터랙션 스크립트 ──────────────────────── -->
 <script>
 /* ─── 상태 ─────────────────────────────── */
-var currentMarket = 'overseas';
+var currentMarket = 'domestic';
 var entries = { buy: [], sell: [], deposit: [], withdraw: [], div: [] };
 
 /* ─── 초기화 ────────────────────────────── */
@@ -395,50 +416,155 @@ var entries = { buy: [], sell: [], deposit: [], withdraw: [], div: [] };
   var mm = String(d.getMonth() + 1).padStart(2, '0');
   var dd = String(d.getDate()).padStart(2, '0');
   document.getElementById('inp-date').value = yy + '-' + mm + '-' + dd;
+  setMarket('domestic');
+  setTradeType('buy');
 })();
 
-/* ─── 마켓 전환 ──────────────────────────── */
-function setMarket(m) {
-  currentMarket = m;
-  document.querySelectorAll('.seg-btn').forEach(function(b) {
+/* ─── 마켓(해외/국내) 전환 — 입력 폼 + 결과 화면 스퀴저 ─── */
+function syncMarketButtons(m) {
+  document.querySelectorAll('.market-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.market === m);
+  });
+  document.querySelectorAll('.form-market-btn').forEach(function(b) {
     b.classList.toggle('active', b.dataset.mkt === m);
   });
+  document.body.setAttribute('data-market', m);
+}
+
+function updateCurrencyPrefixes(m) {
   var sym = m === 'overseas' ? '$' : '₩';
   var cur = m === 'overseas' ? 'USD' : 'KRW';
-  ['price','fee','tax'].forEach(function(k) {
-    document.getElementById('prefix-' + k).textContent = sym;
-    document.getElementById('hint-' + k).textContent   = cur;
+  ['price', 'fee', 'tax', 'amount'].forEach(function(k) {
+    var prefix = document.getElementById('prefix-' + k);
+    var hint   = document.getElementById('hint-' + k);
+    if (prefix) prefix.textContent = sym;
+    if (hint)   hint.textContent   = cur;
   });
+}
+
+function setMarket(m) {
+  currentMarket = m;
+  syncMarketButtons(m);
+  updateCurrencyPrefixes(m);
+  renderAllPanels();
+  updateCards();
   calcAuto();
+  if (typeof window.refreshPdfTradesForMarket === 'function') {
+    window.refreshPdfTradesForMarket(m);
+  }
+}
+
+function filterByMarket(list) {
+  return list.filter(function(e) { return e.market === currentMarket; });
+}
+
+function calcTradeSettlement(type, amt, fee, tax) {
+  if (type === 'buy')  return amt + fee + tax;
+  if (type === 'sell') return amt - fee - tax;
+  return amt;
+}
+
+function settlementFormulaLabel(type) {
+  if (type === 'buy')  return '거래금액 + 수수료 + 세금';
+  if (type === 'sell') return '거래금액 − 수수료 − 세금';
+  return '거래금액 + 수수료 + 세금';
 }
 
 /* ─── 거래유형 변경 ──────────────────────── */
-function onTypeChange() {
-  var t = document.getElementById('inp-type').value;
-  var noStock = (t === 'deposit' || t === 'withdraw');
+function clearTradeFieldsForType(prev, next) {
+  if (prev === next) return;
+  if (next !== 'buy' && next !== 'sell') {
+    document.getElementById('inp-qty').value   = '';
+    document.getElementById('inp-price').value = '';
+  }
+  if (next === 'deposit' || next === 'withdraw') {
+    document.getElementById('inp-fee').value = '';
+    document.getElementById('inp-tax').value = '';
+  } else if (next === 'div') {
+    document.getElementById('inp-fee').value = '';
+  }
+  if (next !== 'deposit' && next !== 'withdraw' && next !== 'div') {
+    document.getElementById('inp-amount').value = '';
+  }
+}
+
+function setTradeType(t) {
+  var prev = document.getElementById('inp-type').value;
+  clearTradeFieldsForType(prev, t);
+  document.getElementById('inp-type').value = t;
+  document.querySelectorAll('.type-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.type === t);
+  });
+
+  var isTrade = (t === 'buy' || t === 'sell');
+  var isCash  = (t === 'deposit' || t === 'withdraw');
+  var isDiv   = (t === 'div');
+
+  /* 입금/출금: 수량·단가·수수료·세금 숨김 → 거래금액 직접 입력만 */
+  document.getElementById('field-qty-price').hidden     = !isTrade;
+  document.getElementById('field-amount-direct').hidden = !(isCash || isDiv);
+  document.getElementById('field-fee-tax').hidden       = isCash || !t;
+  document.getElementById('field-fee').hidden           = !isTrade;
+  document.getElementById('field-tax').hidden           = !(isTrade || isDiv);
+  document.getElementById('field-fee-tax').classList.toggle('fee-tax--tax-only', isDiv);
+
+  /* 배당금: 수량·단가·수수료 숨김 → 거래금액 직접 입력 + 세금 */
+  document.getElementById('calc-box').hidden          = isCash;
+  document.getElementById('calc-row-amount').hidden   = isCash || isDiv;
+
+  var noStock = isCash;
   document.getElementById('field-stock').style.opacity = noStock ? '0.35' : '1';
   document.getElementById('inp-stock').disabled = noStock;
-  if (noStock) {
-    document.getElementById('inp-stock').value = '';
+  if (noStock) document.getElementById('inp-stock').value = '';
+
+  var amtFormula = document.getElementById('calc-formula-amount');
+  var stlFormula = document.getElementById('calc-formula-settlement');
+  if (isCash) {
+    if (amtFormula) amtFormula.textContent = '직접 입력';
+    if (stlFormula) stlFormula.textContent = '거래금액';
+  } else if (isDiv) {
+    if (amtFormula) amtFormula.textContent = '직접 입력';
+    if (stlFormula) stlFormula.textContent = '거래금액 − 세금';
+  } else {
+    if (amtFormula) amtFormula.textContent = '수량 × 단가';
+    if (stlFormula) stlFormula.textContent = settlementFormulaLabel(t);
   }
+
   calcAuto();
 }
 
 /* ─── 자동 계산 ──────────────────────────── */
 function calcAuto() {
+  var t   = document.getElementById('inp-type').value;
+  var sym = currentMarket === 'overseas' ? '$' : '₩';
+  function fmt(n) {
+    if (currentMarket === 'domestic') return sym + Math.round(n).toLocaleString('ko-KR');
+    return sym + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  if (t === 'deposit' || t === 'withdraw') {
+    var cashAmt = parseFloat(document.getElementById('inp-amount').value) || 0;
+    document.getElementById('disp-amount').textContent     = cashAmt ? fmt(cashAmt) : '—';
+    document.getElementById('disp-settlement').textContent = cashAmt ? fmt(cashAmt) : '—';
+    return;
+  }
+  if (t === 'div') {
+    var divAmt = parseFloat(document.getElementById('inp-amount').value) || 0;
+    var divTax = parseFloat(document.getElementById('inp-tax').value)   || 0;
+    var divStl = divAmt - divTax;
+    document.getElementById('disp-amount').textContent     = divAmt ? fmt(divAmt) : '—';
+    document.getElementById('disp-settlement').textContent = (divAmt || divTax) ? fmt(divStl) : '—';
+    return;
+  }
+
   var qty  = parseFloat(document.getElementById('inp-qty').value)   || 0;
   var prc  = parseFloat(document.getElementById('inp-price').value) || 0;
   var fee  = parseFloat(document.getElementById('inp-fee').value)   || 0;
   var tax  = parseFloat(document.getElementById('inp-tax').value)   || 0;
   var amt  = qty * prc;
-  var stl  = amt + fee - tax;
-  var sym  = currentMarket === 'overseas' ? '$' : '₩';
+  var stl  = calcTradeSettlement(t, amt, fee, tax);
   var hasAmt = qty > 0 || prc > 0;
   var hasAny = hasAmt || fee > 0 || tax > 0;
-  function fmt(n) {
-    if (currentMarket === 'domestic') return sym + Math.round(n).toLocaleString('ko-KR');
-    return sym + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
   document.getElementById('disp-amount').textContent     = hasAmt ? fmt(amt) : '—';
   document.getElementById('disp-settlement').textContent = hasAny ? fmt(stl) : '—';
 }
@@ -449,10 +575,11 @@ function addEntry() {
   var type   = document.getElementById('inp-type').value;
   var stock  = document.getElementById('inp-stock').value.trim();
   var detail = document.getElementById('inp-detail').value.trim();
-  var qty    = parseFloat(document.getElementById('inp-qty').value)   || 0;
-  var prc    = parseFloat(document.getElementById('inp-price').value) || 0;
+  var qty    = parseFloat(document.getElementById('inp-qty').value)    || 0;
+  var prc    = parseFloat(document.getElementById('inp-price').value)  || 0;
   var fee    = parseFloat(document.getElementById('inp-fee').value)   || 0;
-  var tax    = parseFloat(document.getElementById('inp-tax').value)   || 0;
+  var tax    = parseFloat(document.getElementById('inp-tax').value)    || 0;
+  var direct = parseFloat(document.getElementById('inp-amount').value) || 0;
 
   if (!date) { showToast('실거래 일자를 입력해주세요.', 'warn'); return; }
   if (!type) { showToast('거래유형을 선택해주세요.', 'warn'); return; }
@@ -460,8 +587,21 @@ function addEntry() {
     showToast('종목명을 입력해주세요.', 'warn'); return;
   }
 
-  var amt = qty * prc;
-  var stl = amt + fee - tax;
+  var amt, stl;
+  if (type === 'deposit' || type === 'withdraw') {
+    if (!direct) { showToast('거래금액을 입력해주세요.', 'warn'); return; }
+    qty = 0; prc = 0; fee = 0; tax = 0;
+    amt = direct;
+    stl = direct;
+  } else if (type === 'div') {
+    if (!direct) { showToast('거래금액을 입력해주세요.', 'warn'); return; }
+    qty = 0; prc = 0; fee = 0;
+    amt = direct;
+    stl = direct - tax;
+  } else {
+    amt = qty * prc;
+    stl = calcTradeSettlement(type, amt, fee, tax);
+  }
   var entry = {
     id: Date.now(),
     date: date, type: type, panel: type, market: currentMarket,
@@ -475,7 +615,6 @@ function addEntry() {
   updateCards();
   switchTab(type);
   showToast('내역이 추가되었습니다.', 'ok');
-  resetForm(true);
 }
 
 /* ─── 내역 삭제 ──────────────────────────── */
@@ -512,10 +651,10 @@ function entryRow(e, panelCtx) {
   var mkt = e.market;
   var delP = panelCtx === 'all' ? e.panel : panelCtx;
   return '<tr class="entry-row" data-id="' + e.id + '">'
-    + '<td class="date-cell">' + e.date + '</td>'
-    + '<td>' + mktBadge(mkt) + '</td>'
-    + '<td class="stock-cell">' + (e.stock || '—') + '</td>'
-    + '<td>' + typeBadge(e.type) + '</td>'
+    + '<td class="col-text date-cell">' + e.date + '</td>'
+    + '<td class="col-text">' + mktBadge(mkt) + '</td>'
+    + '<td class="col-text stock-cell">' + (e.stock || '—') + '</td>'
+    + '<td class="col-text">' + typeBadge(e.type) + '</td>'
     + '<td class="r">' + (e.price ? fmtNum(e.price, mkt) : '—') + '</td>'
     + '<td class="r">' + (e.qty   ? e.qty.toLocaleString()  : '—') + '</td>'
     + '<td class="r">' + fmtNum(e.amount, mkt) + '</td>'
@@ -532,11 +671,11 @@ function renderTable(panel) {
   if (panel === 'all') {
     list = [];
     ['buy','sell','deposit','withdraw','div'].forEach(function(p) {
-      entries[p].forEach(function(e) { list.push(e); });
+      filterByMarket(entries[p]).forEach(function(e) { list.push(e); });
     });
     list.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
   } else {
-    list = entries[panel] || [];
+    list = filterByMarket(entries[panel] || []);
   }
 
   var tbody = document.getElementById('tbody-' + panel);
@@ -577,40 +716,20 @@ function updateTfoot(panel, list) {
 /* ─── 카드 업데이트 ──────────────────────── */
 function updateCards() {
   function setCard(countId, totalId, list, key) {
+    var filtered = filterByMarket(list);
     var c = document.getElementById(countId);
     var t = document.getElementById(totalId);
-    if (c) c.textContent = list.length ? list.length + '건' : '—';
+    if (c) c.textContent = filtered.length ? filtered.length + '건' : '—';
     if (!t) return;
-    if (!list.length) { t.textContent = '—'; return; }
-    var total = list.reduce(function(a, e) { return a + (e[key] || 0); }, 0);
-    var mkt = list[0].market;
-    t.textContent = fmtNum(total, mkt);
+    if (!filtered.length) { t.textContent = '—'; return; }
+    var total = filtered.reduce(function(a, e) { return a + (e[key] || 0); }, 0);
+    t.textContent = fmtNum(total, currentMarket);
   }
   setCard('card-buy-count',      'card-buy-total',      entries.buy,      'settlement');
   setCard('card-sell-count',     'card-sell-total',     entries.sell,     'settlement');
   setCard('card-deposit-count',  'card-deposit-total',  entries.deposit,  'settlement');
   setCard('card-withdraw-count', 'card-withdraw-total', entries.withdraw, 'settlement');
   setCard('card-div-count',      'card-div-total',      entries.div,      'settlement');
-
-  /* 납부세금 카드: 매수+매도 세금 합산 */
-  var taxSrc = entries.buy.concat(entries.sell);
-  var taxEl   = document.getElementById('card-tax-value');
-  var taxNote = document.getElementById('card-tax-note');
-  if (taxSrc.length === 0) {
-    if (taxEl)   taxEl.textContent   = '—';
-    if (taxNote) taxNote.textContent = '매수+매도 세금 합계';
-  } else {
-    var oTax = 0, dTax = 0;
-    taxSrc.forEach(function(e) {
-      if (e.market === 'domestic') dTax += e.tax || 0;
-      else                         oTax += e.tax || 0;
-    });
-    var parts = [];
-    if (oTax > 0) parts.push('해외 ' + fmtNum(oTax, 'overseas'));
-    if (dTax > 0) parts.push('국내 ' + fmtNum(dTax, 'domestic'));
-    if (taxEl)   taxEl.textContent   = parts.length ? (oTax > 0 ? fmtNum(oTax, 'overseas') : fmtNum(dTax, 'domestic')) : '—';
-    if (taxNote) taxNote.textContent = parts.join(' / ') || '매수+매도 세금 합계';
-  }
 }
 
 /* ─── 탭 전환 ────────────────────────────── */
@@ -633,16 +752,14 @@ function resetForm(keepDate) {
     document.getElementById('inp-date').value = d.getFullYear() + '-'
       + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  document.getElementById('inp-type').value     = '';
-  document.getElementById('inp-stock').value    = '';
-  document.getElementById('inp-stock').disabled = false;
-  document.getElementById('inp-detail').value   = '';
-  document.getElementById('inp-qty').value      = '';
-  document.getElementById('inp-price').value    = '';
-  document.getElementById('inp-fee').value      = '';
-  document.getElementById('inp-tax').value      = '';
-  document.getElementById('field-stock').style.opacity = '1';
-  calcAuto();
+  document.getElementById('inp-stock').value  = '';
+  document.getElementById('inp-detail').value = '';
+  document.getElementById('inp-qty').value    = '';
+  document.getElementById('inp-price').value  = '';
+  document.getElementById('inp-fee').value    = '';
+  document.getElementById('inp-tax').value    = '';
+  document.getElementById('inp-amount').value = '';
+  setTradeType('buy');
 }
 
 /* ─── 토스트 ─────────────────────────────── */
