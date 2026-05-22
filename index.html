@@ -5,254 +5,656 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>거래내역 대시보드</title>
   <link rel="stylesheet" href="css/style.css">
-  <!-- PDF.js (텍스트 추출) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <!-- Tesseract.js (스캔/이미지 PDF OCR) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" crossorigin="anonymous"></script>
 </head>
-<body data-market="overseas">
+<body>
 
 <!-- ═══════════════════════════════════════════════
      HEADER
 ════════════════════════════════════════════════ -->
 <div class="header">
   <div class="header-left">
-    <div>
-      <div class="issuer-label">신한투자증권 거래내역서</div>
-      <h1 id="header-title">해외주식 거래내역 대시보드</h1>
-      <div class="sub" id="header-sub"></div>
-    </div>
-  </div>
-  <div class="header-center">
-    <div class="market-toggle">
-      <button class="market-btn active" data-market="overseas">🌐 해외주식</button>
-      <button class="market-btn" data-market="domestic">🇰🇷 국내주식</button>
-    </div>
+    <div class="issuer-label" id="issuer-label">거래내역 대시보드</div>
+    <h1 id="header-title">주식 거래내역 대시보드</h1>
+    <div class="sub" id="header-sub"></div>
   </div>
   <div class="header-right">
     <div class="header-actions">
-      <input type="file" id="pdfUploadInput" accept="application/pdf,.pdf" hidden aria-hidden="true">
-      <button type="button" class="btn-upload" id="pdfUploadBtn">거래내역 PDF 업로드</button>
-      <div id="pdfLoadingState" class="pdf-loading" hidden>데이터 분석 중...</div>
+      <input type="file" id="pdfUploadInput" accept="application/pdf,.pdf" multiple hidden aria-hidden="true">
+      <button type="button" class="btn-secondary" id="pdfUploadBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        PDF 업로드
+      </button>
+      <div id="pdfLoadingState" class="pdf-loading" hidden>분석 중...</div>
+      <div class="meta" id="header-meta"></div>
     </div>
-    <div class="meta" id="header-meta"></div>
-  </div>
-</div>
-
-<!-- 빈 화면: PDF 업로드 전 안내 -->
-
-<!-- 대시보드 콘텐츠: PDF 업로드 후 표시 -->
-<div id="dashboard-content">
-
-<!-- ── 환율 설정 바 ─────────────────────────────────────────── -->
-<div class="rate-bar">
-  <span class="rate-bar-label">💱 환율</span>
-  <span class="rate-bar-sep">₩</span>
-  <input type="number" id="exchangeRateInput" class="rate-input" value="1350" min="100" max="9999" step="1">
-  <span class="rate-bar-unit">/ USD</span>
-  <span class="rate-bar-note">양도소득세 계산에 적용 (기본공제 250만원, 세율 22%)</span>
-</div>
-
-<!-- ═══════════════════════════════════════════════
-     SUMMARY CARDS
-     카드 클릭 시 아래 탭도 함께 전환됨 (switchTab)
-════════════════════════════════════════════════ -->
-<div class="cards">
-  <div class="card active" data-tab="buy" onclick="switchTab('buy')">
-    <div class="label">💳 매수</div>
-    <div class="value red" id="card-buy-count">—</div>
-    <div class="note" id="card-buy-total">—</div>
-  </div>
-  <div class="card" data-tab="sell" onclick="switchTab('sell')">
-    <div class="label">💰 매도</div>
-    <div class="value blue" id="card-sell-count">—</div>
-    <div class="note" id="card-sell-total">—</div>
-  </div>
-  <div class="card" data-tab="tax" onclick="switchTab('tax')">
-    <div class="label">🧾 세금</div>
-    <div class="value purple">—</div>
-    <div class="note">—</div>
-  </div>
-  <div id="card-fx-wrap" class="card" data-tab="fx" onclick="switchTab('fx')">
-    <div class="label">💱 환전</div>
-    <div class="value teal">—</div>
-    <div class="note">—</div>
-  </div>
-  <div class="card" data-tab="div" onclick="switchTab('div')">
-    <div class="label">🎁 배당금</div>
-    <div class="value green">—</div>
-    <div class="note">—</div>
-  </div>
-  <div class="card card-stat" id="card-pl">
-    <div class="label">📈 실현 손익</div>
-    <div class="value" id="card-pl-value">—</div>
-    <div class="note" id="card-pl-note">데이터 로드 후 표시</div>
-  </div>
-  <div class="card card-stat" id="card-etax">
-    <div class="label">💸 예상 양도세</div>
-    <div class="value orange" id="card-etax-value">—</div>
-    <div class="note" id="card-etax-note">기본공제 ₩250만 적용</div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════
-     예수금 잔고 흐름 (거래일 기준)
+     MAIN LAYOUT
 ════════════════════════════════════════════════ -->
-<div class="section chart-section chart-section--full">
-  <h2>💰 예수금 잔고 흐름 (USD)</h2>
-  <p class="chart-hint" id="chartLineHint">거래일 기준 일별 말잔 예수금이 표시됩니다.</p>
-  <div class="chart-wrap chart-wrap--tall">
-    <canvas id="chartBalanceFlow" aria-label="예수금 잔고 흐름 차트"></canvas>
-  </div>
-</div>
+<div class="main-layout">
 
-<!-- ═══════════════════════════════════════════════
-     TAB SECTION
-     탭 버튼 + 5개 패널 (매수/매도/세금/환전/배당금)
-════════════════════════════════════════════════ -->
-<div class="section">
+  <!-- ══ LEFT: 입력 폼 ══════════════════════════════ -->
+  <aside class="form-aside">
+    <div class="form-card">
+      <div class="form-card-header">
+        <span class="form-card-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          거래 직접 입력
+        </span>
+      </div>
 
-  <!-- 탭 버튼 -->
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="buy"  onclick="switchTab('buy')">💳 매수</button>
-    <button class="tab-btn"        data-tab="sell" onclick="switchTab('sell')">💰 매도</button>
-    <button class="tab-btn"        data-tab="tax"  onclick="switchTab('tax')">🧾 세금</button>
-    <button class="tab-btn" id="tab-btn-fx" data-tab="fx" onclick="switchTab('fx')">💱 환전</button>
-    <button class="tab-btn"        data-tab="div"  onclick="switchTab('div')">🎁 배당금</button>
-  </div>
+      <div class="form-body">
 
-  <!-- ── 패널: 매수 ─────────────────────────────────── -->
-  <div class="tab-panel active" id="panel-buy">
-    <table>
-      <thead>
-        <tr>
-          <th>거래일</th>
-          <th>종목명</th>
-          <th>거래유형</th>
-          <th class="r">단가 (USD)</th>
-          <th class="r">수량</th>
-          <th class="r">정산금액 (USD)</th>
-          <th class="r">예수금잔고 (USD)</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-buy"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="5" id="tfoot-buy-label">합계 (0건)</td>
-          <td class="r" id="tfoot-buy-total">—</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div><!-- /#panel-buy -->
+        <!-- 실거래 일자 -->
+        <div class="field">
+          <label class="field-label" for="inp-date">실거래 일자</label>
+          <input type="date" id="inp-date" class="inp">
+        </div>
 
-  <!-- ── 패널: 매도 ─────────────────────────────────── -->
-  <div class="tab-panel" id="panel-sell">
-    <table>
-      <thead>
-        <tr>
-          <th>거래일</th>
-          <th>종목명</th>
-          <th>거래유형</th>
-          <th class="r">단가 (USD)</th>
-          <th class="r">수량</th>
-          <th class="r">정산금액 (USD)</th>
-          <th class="r">개별 손익 (USD)</th>
-          <th class="r">예수금잔고 (USD)</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-sell"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="5" id="tfoot-sell-label">합계 (0건)</td>
-          <td class="r" id="tfoot-sell-total">—</td>
-          <td class="r pl-na" id="tfoot-sell-pl">—</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div><!-- /#panel-sell -->
+        <!-- 거래유형 + 종류 -->
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="inp-type">거래유형</label>
+            <select id="inp-type" class="inp" onchange="onTypeChange()">
+              <option value="">선택</option>
+              <option value="buy">매수</option>
+              <option value="sell">매도</option>
+              <option value="withdraw">출금</option>
+              <option value="deposit">입금</option>
+              <option value="div">배당금</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">종류</label>
+            <div class="seg-ctrl">
+              <button class="seg-btn" data-mkt="domestic" onclick="setMarket('domestic')">🇰🇷 국내</button>
+              <button class="seg-btn active" data-mkt="overseas" onclick="setMarket('overseas')">🌐 해외</button>
+            </div>
+          </div>
+        </div>
 
-  <!-- ── 패널: 세금 ─────────────────────────────────── -->
-  <div class="tab-panel" id="panel-tax">
-    <table>
-      <thead>
-        <tr>
-          <th>거래일</th>
-          <th>종목명</th>
-          <th>유형</th>
-          <th class="r">정산금액 (USD)</th>
-          <th class="r">비고 (환급기준)</th>
-          <th class="r">예수금잔고 (USD)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3">합계 (0건)</td>
-          <td class="r purple">—</td>
-          <td colspan="2"></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div><!-- /#panel-tax -->
+        <!-- 종목명 -->
+        <div class="field" id="field-stock">
+          <label class="field-label" for="inp-stock">종목명</label>
+          <input type="text" id="inp-stock" class="inp" placeholder="예) APPLE INC / 삼성전자">
+        </div>
 
-  <!-- ── 패널: 환전 ─────────────────────────────────── -->
-  <div class="tab-panel" id="panel-fx">
-    <table>
-      <thead>
-        <tr>
-          <th>거래일</th>
-          <th>종목명</th>
-          <th>유형</th>
-          <th class="r">환율 (KRW/USD)</th>
-          <th class="r">출금 (USD)</th>
-          <th class="r">입금 (KRW)</th>
-          <th class="r">예수금잔고 (USD)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div><!-- /#panel-fx -->
+        <!-- 상세내용 -->
+        <div class="field">
+          <label class="field-label" for="inp-detail">상세내용</label>
+          <input type="text" id="inp-detail" class="inp" placeholder="메모 또는 참고사항">
+        </div>
 
-  <!-- ── 패널: 배당금 ───────────────────────────────── -->
-  <div class="tab-panel" id="panel-div">
-    <table>
-      <thead>
-        <tr>
-          <th>거래일</th>
-          <th>종목명</th>
-          <th>유형</th>
-          <th class="r">배당금 (USD)</th>
-          <th class="r">예수금잔고 (USD)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3">합계 (0건)</td>
-          <td class="r green">—</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div><!-- /#panel-div -->
+        <div class="field-divider"></div>
 
-</div><!-- /.section (tab container) -->
+        <!-- 수량 + 단가 -->
+        <div class="field-row" id="field-qty-price">
+          <div class="field">
+            <label class="field-label" for="inp-qty">수량</label>
+            <input type="number" id="inp-qty" class="inp inp-num" placeholder="0" min="0" step="any" oninput="calcAuto()">
+          </div>
+          <div class="field">
+            <label class="field-label" for="inp-price">
+              단가 <span class="currency-hint" id="hint-price">USD</span>
+            </label>
+            <div class="inp-prefix-wrap">
+              <span class="inp-prefix" id="prefix-price">$</span>
+              <input type="number" id="inp-price" class="inp inp-num inp-prefixed" placeholder="0.00" min="0" step="any" oninput="calcAuto()">
+            </div>
+          </div>
+        </div>
 
-</div><!-- /#dashboard-content -->
+        <!-- 수수료 + 세금 -->
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="inp-fee">
+              수수료 <span class="currency-hint" id="hint-fee">USD</span>
+            </label>
+            <div class="inp-prefix-wrap">
+              <span class="inp-prefix" id="prefix-fee">$</span>
+              <input type="number" id="inp-fee" class="inp inp-num inp-prefixed" placeholder="0.00" min="0" step="any" oninput="calcAuto()">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="inp-tax">
+              세금 <span class="currency-hint" id="hint-tax">USD</span>
+            </label>
+            <div class="inp-prefix-wrap">
+              <span class="inp-prefix" id="prefix-tax">$</span>
+              <input type="number" id="inp-tax" class="inp inp-num inp-prefixed" placeholder="0.00" min="0" step="any" oninput="calcAuto()">
+            </div>
+          </div>
+        </div>
 
-<div class="footer">
-  신한투자증권 해외주식 거래내역 대시보드
-</div>
+        <!-- 자동계산 박스 -->
+        <div class="calc-box">
+          <div class="calc-row">
+            <span class="calc-label">
+              거래금액
+              <span class="calc-formula">수량 × 단가</span>
+            </span>
+            <span class="calc-value" id="disp-amount">—</span>
+          </div>
+          <div class="calc-divider"></div>
+          <div class="calc-row highlight">
+            <span class="calc-label">
+              정산금액
+              <span class="calc-formula">거래금액 + 수수료 − 세금</span>
+            </span>
+            <span class="calc-value" id="disp-settlement">—</span>
+          </div>
+        </div>
 
+      </div><!-- /form-body -->
+
+      <div class="form-footer">
+        <button class="btn-ghost" onclick="resetForm()">초기화</button>
+        <button class="btn-primary" onclick="addEntry()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          내역 추가
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ RIGHT: 대시보드 ═══════════════════════════ -->
+  <div class="dashboard-area">
+
+    <!-- 환율 바 (해외모드) -->
+    <div class="rate-bar" id="rate-bar">
+      <span class="rate-bar-label">💱 환율</span>
+      <span class="rate-bar-sep">₩</span>
+      <input type="number" id="exchangeRateInput" class="rate-input" value="1350" min="100" max="9999" step="1">
+      <span class="rate-bar-unit">/ USD</span>
+      <span class="rate-bar-note">양도소득세 계산 기준 (기본공제 250만원, 세율 22%)</span>
+    </div>
+
+    <!-- 서머리 카드 -->
+    <div class="cards">
+      <div class="card" data-tab="buy" onclick="switchTab('buy')">
+        <div class="label">💳 매수</div>
+        <div class="value red" id="card-buy-count">—</div>
+        <div class="note" id="card-buy-total">—</div>
+      </div>
+      <div class="card" data-tab="sell" onclick="switchTab('sell')">
+        <div class="label">💰 매도</div>
+        <div class="value blue" id="card-sell-count">—</div>
+        <div class="note" id="card-sell-total">—</div>
+      </div>
+      <div class="card card-stat">
+        <div class="label">🧾 납부 세금</div>
+        <div class="value purple" id="card-tax-value">—</div>
+        <div class="note" id="card-tax-note">매수+매도 세금 합계</div>
+      </div>
+      <div class="card" data-tab="deposit" onclick="switchTab('deposit')">
+        <div class="label">⬇️ 입금</div>
+        <div class="value teal" id="card-deposit-count">—</div>
+        <div class="note" id="card-deposit-total">—</div>
+      </div>
+      <div class="card" data-tab="withdraw" onclick="switchTab('withdraw')">
+        <div class="label">⬆️ 출금</div>
+        <div class="value orange" id="card-withdraw-count">—</div>
+        <div class="note" id="card-withdraw-total">—</div>
+      </div>
+      <div class="card" data-tab="div" onclick="switchTab('div')">
+        <div class="label">🎁 배당금</div>
+        <div class="value green" id="card-div-count">—</div>
+        <div class="note" id="card-div-total">—</div>
+      </div>
+      <div class="card card-stat" id="card-pl">
+        <div class="label">📈 실현 손익</div>
+        <div class="value" id="card-pl-value">—</div>
+        <div class="note" id="card-pl-note">데이터 로드 후 표시</div>
+      </div>
+      <div class="card card-stat" id="card-etax">
+        <div class="label">💸 예상 양도세</div>
+        <div class="value orange" id="card-etax-value">—</div>
+        <div class="note" id="card-etax-note">기본공제 ₩250만 적용</div>
+      </div>
+    </div>
+
+    <!-- 잔고 흐름 차트 -->
+    <div class="section chart-section">
+      <h2>💰 잔고 흐름</h2>
+      <p class="chart-hint" id="chartLineHint">거래일 기준 일별 말잔 잔고가 표시됩니다.</p>
+      <div class="chart-wrap chart-wrap--tall">
+        <canvas id="chartBalanceFlow" aria-label="잔고 흐름 차트"></canvas>
+      </div>
+    </div>
+
+    <!-- 탭 거래내역 -->
+    <div class="section">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="all"      onclick="switchTab('all')">📋 전체</button>
+        <button class="tab-btn"        data-tab="buy"      onclick="switchTab('buy')">💳 매수</button>
+        <button class="tab-btn"        data-tab="sell"     onclick="switchTab('sell')">💰 매도</button>
+        <button class="tab-btn"        data-tab="deposit"  onclick="switchTab('deposit')">⬇️ 입금</button>
+        <button class="tab-btn"        data-tab="withdraw" onclick="switchTab('withdraw')">⬆️ 출금</button>
+        <button class="tab-btn"        data-tab="div"      onclick="switchTab('div')">🎁 배당금</button>
+      </div>
+
+      <!-- 전체 -->
+      <div class="tab-panel active" id="panel-all">
+        <div class="panel-empty" id="empty-all">아직 내역이 없습니다.</div>
+        <table>
+          <thead><tr>
+            <th>거래일</th><th>종류</th><th>종목명</th><th>거래유형</th>
+            <th class="r">단가</th><th class="r">수량</th><th class="r">거래금액</th>
+            <th class="r">수수료</th><th class="r">세금</th><th class="r">정산금액</th>
+            <th class="c">삭제</th>
+          </tr></thead>
+          <tbody id="tbody-all"></tbody>
+          <tfoot><tr>
+            <td colspan="6" id="tfoot-all-label">합계 (0건)</td>
+            <td class="r" id="tfoot-all-amount">—</td>
+            <td class="r" id="tfoot-all-fee">—</td>
+            <td class="r" id="tfoot-all-tax">—</td>
+            <td class="r" id="tfoot-all-total">—</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <!-- 매수 -->
+      <div class="tab-panel" id="panel-buy">
+        <div class="panel-empty" id="empty-buy">아직 매수 내역이 없습니다.</div>
+        <table>
+          <thead><tr>
+            <th>거래일</th><th>종류</th><th>종목명</th><th>거래유형</th>
+            <th class="r">단가</th><th class="r">수량</th><th class="r">거래금액</th>
+            <th class="r">수수료</th><th class="r">세금</th><th class="r">정산금액</th>
+            <th class="c">삭제</th>
+          </tr></thead>
+          <tbody id="tbody-buy"></tbody>
+          <tfoot><tr>
+            <td colspan="6" id="tfoot-buy-label">합계 (0건)</td>
+            <td class="r" id="tfoot-buy-amount">—</td>
+            <td class="r" id="tfoot-buy-fee">—</td>
+            <td class="r" id="tfoot-buy-tax">—</td>
+            <td class="r" id="tfoot-buy-total">—</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <!-- 매도 -->
+      <div class="tab-panel" id="panel-sell">
+        <div class="panel-empty" id="empty-sell">아직 매도 내역이 없습니다.</div>
+        <table>
+          <thead><tr>
+            <th>거래일</th><th>종류</th><th>종목명</th><th>거래유형</th>
+            <th class="r">단가</th><th class="r">수량</th><th class="r">거래금액</th>
+            <th class="r">수수료</th><th class="r">세금</th><th class="r">정산금액</th>
+            <th class="c">삭제</th>
+          </tr></thead>
+          <tbody id="tbody-sell"></tbody>
+          <tfoot><tr>
+            <td colspan="6" id="tfoot-sell-label">합계 (0건)</td>
+            <td class="r" id="tfoot-sell-amount">—</td>
+            <td class="r" id="tfoot-sell-fee">—</td>
+            <td class="r" id="tfoot-sell-tax">—</td>
+            <td class="r" id="tfoot-sell-total">—</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <!-- 입금 -->
+      <div class="tab-panel" id="panel-deposit">
+        <div class="panel-empty" id="empty-deposit">아직 입금 내역이 없습니다.</div>
+        <table>
+          <thead><tr>
+            <th>거래일</th><th>종류</th><th>종목명</th><th>거래유형</th>
+            <th class="r">단가</th><th class="r">수량</th><th class="r">거래금액</th>
+            <th class="r">수수료</th><th class="r">세금</th><th class="r">정산금액</th>
+            <th class="c">삭제</th>
+          </tr></thead>
+          <tbody id="tbody-deposit"></tbody>
+          <tfoot><tr>
+            <td colspan="6" id="tfoot-deposit-label">합계 (0건)</td>
+            <td class="r" id="tfoot-deposit-amount">—</td>
+            <td class="r" id="tfoot-deposit-fee">—</td>
+            <td class="r" id="tfoot-deposit-tax">—</td>
+            <td class="r" id="tfoot-deposit-total">—</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <!-- 출금 -->
+      <div class="tab-panel" id="panel-withdraw">
+        <div class="panel-empty" id="empty-withdraw">아직 출금 내역이 없습니다.</div>
+        <table>
+          <thead><tr>
+            <th>거래일</th><th>종류</th><th>종목명</th><th>거래유형</th>
+            <th class="r">단가</th><th class="r">수량</th><th class="r">거래금액</th>
+            <th class="r">수수료</th><th class="r">세금</th><th class="r">정산금액</th>
+            <th class="c">삭제</th>
+          </tr></thead>
+          <tbody id="tbody-withdraw"></tbody>
+          <tfoot><tr>
+            <td colspan="6" id="tfoot-withdraw-label">합계 (0건)</td>
+            <td class="r" id="tfoot-withdraw-amount">—</td>
+            <td class="r" id="tfoot-withdraw-fee">—</td>
+            <td class="r" id="tfoot-withdraw-tax">—</td>
+            <td class="r" id="tfoot-withdraw-total">—</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+      <!-- 배당금 -->
+      <div class="tab-panel" id="panel-div">
+        <div class="panel-empty" id="empty-div">아직 배당금 내역이 없습니다.</div>
+        <table>
+          <thead><tr>
+            <th>거래일</th><th>종류</th><th>종목명</th><th>거래유형</th>
+            <th class="r">단가</th><th class="r">수량</th><th class="r">거래금액</th>
+            <th class="r">수수료</th><th class="r">세금</th><th class="r">정산금액</th>
+            <th class="c">삭제</th>
+          </tr></thead>
+          <tbody id="tbody-div"></tbody>
+          <tfoot><tr>
+            <td colspan="6" id="tfoot-div-label">합계 (0건)</td>
+            <td class="r" id="tfoot-div-amount">—</td>
+            <td class="r" id="tfoot-div-fee">—</td>
+            <td class="r" id="tfoot-div-tax">—</td>
+            <td class="r" id="tfoot-div-total">—</td>
+            <td></td>
+          </tr></tfoot>
+        </table>
+      </div>
+
+    </div><!-- /.section -->
+  </div><!-- /.dashboard-area -->
+</div><!-- /.main-layout -->
+
+<div class="footer" id="footer-text">주식 거래내역 대시보드</div>
 
 <script src="js/utils.js"></script>
 <script src="js/extractor.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/renderer.js"></script>
 <script src="js/main.js"></script>
+
+<!-- ── 폼 인터랙션 스크립트 ──────────────────────── -->
+<script>
+/* ─── 상태 ─────────────────────────────── */
+var currentMarket = 'overseas';
+var entries = { buy: [], sell: [], deposit: [], withdraw: [], div: [] };
+
+/* ─── 초기화 ────────────────────────────── */
+(function init() {
+  var d = new Date();
+  var yy = d.getFullYear();
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  document.getElementById('inp-date').value = yy + '-' + mm + '-' + dd;
+})();
+
+/* ─── 마켓 전환 ──────────────────────────── */
+function setMarket(m) {
+  currentMarket = m;
+  document.querySelectorAll('.seg-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.mkt === m);
+  });
+  var sym = m === 'overseas' ? '$' : '₩';
+  var cur = m === 'overseas' ? 'USD' : 'KRW';
+  ['price','fee','tax'].forEach(function(k) {
+    document.getElementById('prefix-' + k).textContent = sym;
+    document.getElementById('hint-' + k).textContent   = cur;
+  });
+  calcAuto();
+}
+
+/* ─── 거래유형 변경 ──────────────────────── */
+function onTypeChange() {
+  var t = document.getElementById('inp-type').value;
+  var noStock = (t === 'deposit' || t === 'withdraw');
+  document.getElementById('field-stock').style.opacity = noStock ? '0.35' : '1';
+  document.getElementById('inp-stock').disabled = noStock;
+  if (noStock) {
+    document.getElementById('inp-stock').value = '';
+  }
+  calcAuto();
+}
+
+/* ─── 자동 계산 ──────────────────────────── */
+function calcAuto() {
+  var qty  = parseFloat(document.getElementById('inp-qty').value)   || 0;
+  var prc  = parseFloat(document.getElementById('inp-price').value) || 0;
+  var fee  = parseFloat(document.getElementById('inp-fee').value)   || 0;
+  var tax  = parseFloat(document.getElementById('inp-tax').value)   || 0;
+  var amt  = qty * prc;
+  var stl  = amt + fee - tax;
+  var sym  = currentMarket === 'overseas' ? '$' : '₩';
+  var hasAmt = qty > 0 || prc > 0;
+  var hasAny = hasAmt || fee > 0 || tax > 0;
+  function fmt(n) {
+    if (currentMarket === 'domestic') return sym + Math.round(n).toLocaleString('ko-KR');
+    return sym + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  document.getElementById('disp-amount').textContent     = hasAmt ? fmt(amt) : '—';
+  document.getElementById('disp-settlement').textContent = hasAny ? fmt(stl) : '—';
+}
+
+/* ─── 내역 추가 ──────────────────────────── */
+function addEntry() {
+  var date   = document.getElementById('inp-date').value;
+  var type   = document.getElementById('inp-type').value;
+  var stock  = document.getElementById('inp-stock').value.trim();
+  var detail = document.getElementById('inp-detail').value.trim();
+  var qty    = parseFloat(document.getElementById('inp-qty').value)   || 0;
+  var prc    = parseFloat(document.getElementById('inp-price').value) || 0;
+  var fee    = parseFloat(document.getElementById('inp-fee').value)   || 0;
+  var tax    = parseFloat(document.getElementById('inp-tax').value)   || 0;
+
+  if (!date) { showToast('실거래 일자를 입력해주세요.', 'warn'); return; }
+  if (!type) { showToast('거래유형을 선택해주세요.', 'warn'); return; }
+  if ((type === 'buy' || type === 'sell' || type === 'div') && !stock) {
+    showToast('종목명을 입력해주세요.', 'warn'); return;
+  }
+
+  var amt = qty * prc;
+  var stl = amt + fee - tax;
+  var entry = {
+    id: Date.now(),
+    date: date, type: type, panel: type, market: currentMarket,
+    stock: stock, detail: detail,
+    qty: qty, price: prc, fee: fee, tax: tax,
+    amount: amt, settlement: stl
+  };
+
+  entries[type].push(entry);
+  renderAllPanels();
+  updateCards();
+  switchTab(type);
+  showToast('내역이 추가되었습니다.', 'ok');
+  resetForm(true);
+}
+
+/* ─── 내역 삭제 ──────────────────────────── */
+function deleteEntry(panel, id) {
+  if (panel === 'all') {
+    ['buy','sell','deposit','withdraw','div'].forEach(function(p) {
+      entries[p] = entries[p].filter(function(e) { return e.id !== id; });
+    });
+  } else {
+    entries[panel] = entries[panel].filter(function(e) { return e.id !== id; });
+  }
+  renderAllPanels();
+  updateCards();
+}
+
+/* ─── 공통 헬퍼 ──────────────────────────── */
+function fmtNum(n, mkt) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  if (mkt === 'domestic') return '₩' + Math.round(n).toLocaleString('ko-KR');
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function mktBadge(m) {
+  return '<span class="mkt-badge mkt-' + m + '">' + (m === 'overseas' ? '해외' : '국내') + '</span>';
+}
+var TYPE_LABEL = { buy:'매수', sell:'매도', deposit:'입금', withdraw:'출금', div:'배당금' };
+var TYPE_CLASS = { buy:'badge-buy', sell:'badge-sell', deposit:'badge-in', withdraw:'badge-out', div:'badge-div' };
+function typeBadge(t) {
+  return '<span class="badge ' + (TYPE_CLASS[t]||'') + '">' + (TYPE_LABEL[t]||t) + '</span>';
+}
+function delBtn(p, id) {
+  return '<button class="btn-del" onclick="deleteEntry(\'' + p + '\',' + id + ')" aria-label="삭제">×</button>';
+}
+function entryRow(e, panelCtx) {
+  var mkt = e.market;
+  var delP = panelCtx === 'all' ? e.panel : panelCtx;
+  return '<tr class="entry-row" data-id="' + e.id + '">'
+    + '<td class="date-cell">' + e.date + '</td>'
+    + '<td>' + mktBadge(mkt) + '</td>'
+    + '<td class="stock-cell">' + (e.stock || '—') + '</td>'
+    + '<td>' + typeBadge(e.type) + '</td>'
+    + '<td class="r">' + (e.price ? fmtNum(e.price, mkt) : '—') + '</td>'
+    + '<td class="r">' + (e.qty   ? e.qty.toLocaleString()  : '—') + '</td>'
+    + '<td class="r">' + fmtNum(e.amount, mkt) + '</td>'
+    + '<td class="r fee-cell">' + fmtNum(e.fee, mkt) + '</td>'
+    + '<td class="r tax-cell">' + fmtNum(e.tax, mkt) + '</td>'
+    + '<td class="r settle-cell">' + fmtNum(e.settlement, mkt) + '</td>'
+    + '<td class="c">' + delBtn(delP, e.id) + '</td>'
+    + '</tr>';
+}
+
+/* ─── 테이블 렌더 ────────────────────────── */
+function renderTable(panel) {
+  var list;
+  if (panel === 'all') {
+    list = [];
+    ['buy','sell','deposit','withdraw','div'].forEach(function(p) {
+      entries[p].forEach(function(e) { list.push(e); });
+    });
+    list.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  } else {
+    list = entries[panel] || [];
+  }
+
+  var tbody = document.getElementById('tbody-' + panel);
+  var empty = document.getElementById('empty-' + panel);
+  if (!tbody) return;
+
+  if (list.length === 0) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'flex';
+    updateTfoot(panel, []);
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  var html = '';
+  list.forEach(function(e) { html += entryRow(e, panel); });
+  tbody.innerHTML = html;
+  updateTfoot(panel, list);
+}
+
+function renderAllPanels() {
+  ['all','buy','sell','deposit','withdraw','div'].forEach(renderTable);
+}
+
+/* ─── tfoot 갱신 ─────────────────────────── */
+function updateTfoot(panel, list) {
+  var n = list.length;
+  var mkt = list[0] ? list[0].market : currentMarket;
+  function sum(key) { return list.reduce(function(a, e) { return a + (e[key] || 0); }, 0); }
+  function s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  s('tfoot-' + panel + '-label',  '합계 (' + n + '건)');
+  s('tfoot-' + panel + '-amount', n ? fmtNum(sum('amount'),     mkt) : '—');
+  s('tfoot-' + panel + '-fee',    n ? fmtNum(sum('fee'),        mkt) : '—');
+  s('tfoot-' + panel + '-tax',    n ? fmtNum(sum('tax'),        mkt) : '—');
+  s('tfoot-' + panel + '-total',  n ? fmtNum(sum('settlement'), mkt) : '—');
+}
+
+/* ─── 카드 업데이트 ──────────────────────── */
+function updateCards() {
+  function setCard(countId, totalId, list, key) {
+    var c = document.getElementById(countId);
+    var t = document.getElementById(totalId);
+    if (c) c.textContent = list.length ? list.length + '건' : '—';
+    if (!t) return;
+    if (!list.length) { t.textContent = '—'; return; }
+    var total = list.reduce(function(a, e) { return a + (e[key] || 0); }, 0);
+    var mkt = list[0].market;
+    t.textContent = fmtNum(total, mkt);
+  }
+  setCard('card-buy-count',      'card-buy-total',      entries.buy,      'settlement');
+  setCard('card-sell-count',     'card-sell-total',     entries.sell,     'settlement');
+  setCard('card-deposit-count',  'card-deposit-total',  entries.deposit,  'settlement');
+  setCard('card-withdraw-count', 'card-withdraw-total', entries.withdraw, 'settlement');
+  setCard('card-div-count',      'card-div-total',      entries.div,      'settlement');
+
+  /* 납부세금 카드: 매수+매도 세금 합산 */
+  var taxSrc = entries.buy.concat(entries.sell);
+  var taxEl   = document.getElementById('card-tax-value');
+  var taxNote = document.getElementById('card-tax-note');
+  if (taxSrc.length === 0) {
+    if (taxEl)   taxEl.textContent   = '—';
+    if (taxNote) taxNote.textContent = '매수+매도 세금 합계';
+  } else {
+    var oTax = 0, dTax = 0;
+    taxSrc.forEach(function(e) {
+      if (e.market === 'domestic') dTax += e.tax || 0;
+      else                         oTax += e.tax || 0;
+    });
+    var parts = [];
+    if (oTax > 0) parts.push('해외 ' + fmtNum(oTax, 'overseas'));
+    if (dTax > 0) parts.push('국내 ' + fmtNum(dTax, 'domestic'));
+    if (taxEl)   taxEl.textContent   = parts.length ? (oTax > 0 ? fmtNum(oTax, 'overseas') : fmtNum(dTax, 'domestic')) : '—';
+    if (taxNote) taxNote.textContent = parts.join(' / ') || '매수+매도 세금 합계';
+  }
+}
+
+/* ─── 탭 전환 ────────────────────────────── */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === 'panel-' + tab);
+  });
+  document.querySelectorAll('.card[data-tab]').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.tab === tab);
+  });
+}
+
+/* ─── 폼 초기화 ──────────────────────────── */
+function resetForm(keepDate) {
+  if (!keepDate) {
+    var d = new Date();
+    document.getElementById('inp-date').value = d.getFullYear() + '-'
+      + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  document.getElementById('inp-type').value     = '';
+  document.getElementById('inp-stock').value    = '';
+  document.getElementById('inp-stock').disabled = false;
+  document.getElementById('inp-detail').value   = '';
+  document.getElementById('inp-qty').value      = '';
+  document.getElementById('inp-price').value    = '';
+  document.getElementById('inp-fee').value      = '';
+  document.getElementById('inp-tax').value      = '';
+  document.getElementById('field-stock').style.opacity = '1';
+  calcAuto();
+}
+
+/* ─── 토스트 ─────────────────────────────── */
+function showToast(msg, type) {
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + (type || 'ok');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 300); }, 2500);
+}
+</script>
+
 </body>
 </html>
